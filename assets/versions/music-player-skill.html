@@ -1,0 +1,1462 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>复古磁带播放器 - Pink Floyd</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+        }
+
+        /* 背景装饰 */
+        .bg-decoration {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .bg-decoration::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(212, 175, 55, 0.1) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        /* 分享按钮区域 */
+        .share-buttons {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 12px;
+            z-index: 100;
+        }
+
+        .share-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            background: linear-gradient(145deg, #2a2a3e, #1a1a2e);
+            box-shadow: 
+                0 4px 15px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        .share-btn:hover {
+            transform: translateY(-3px) scale(1.1);
+            box-shadow: 
+                0 8px 25px rgba(212, 175, 55, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        .share-btn svg {
+            width: 22px;
+            height: 22px;
+            fill: #d4af37;
+        }
+
+        /* 主容器 */
+        .player-container {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 40px;
+        }
+
+        /* 磁带外壳 */
+        .cassette-case {
+            width: 380px;
+            height: 240px;
+            background: linear-gradient(
+                180deg,
+                rgba(255, 255, 255, 0.15) 0%,
+                rgba(255, 255, 255, 0.05) 50%,
+                rgba(255, 255, 255, 0.1) 100%
+            );
+            border-radius: 20px;
+            padding: 15px;
+            box-shadow: 
+                0 25px 50px rgba(0, 0, 0, 0.5),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* 磁带主体 */
+        .cassette {
+            width: 100%;
+            height: 100%;
+            background: 
+                /* 复古米色质感 */
+                linear-gradient(145deg, #e8e0d0 0%, #d9ceb2 50%, #c8b898 100%);
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 
+                0 4px 15px rgba(0, 0, 0, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+        }
+
+        /* 磁带纹理效果 */
+        .cassette::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                /* 细微纹理 */
+                repeating-linear-gradient(
+                    90deg,
+                    transparent 0px,
+                    transparent 3px,
+                    rgba(0, 0, 0, 0.02) 3px,
+                    rgba(0, 0, 0, 0.02) 4px
+                );
+            pointer-events: none;
+        }
+
+        /* 顶部标签区域 */
+        .label-area {
+            position: absolute;
+            top: 20px;
+            left: 30px;
+            right: 30px;
+            height: 80px;
+            background: linear-gradient(145deg, #d9ceb2 0%, rgb(252, 122, 143) 100%);
+            border-radius: 0;
+            overflow: hidden;
+            box-shadow: 
+                0 2px 8px rgba(0, 0, 0, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        }
+
+        /* 复古标签 */
+        .retro-label {
+            width: 100%;
+            height: 100%;
+            background: 
+                /* 红色上半部分 */
+                linear-gradient(
+                    180deg,
+                    #8B4513 0%,
+                    #8B4513 60%,
+                    #000 60%,
+                    #000 100%
+                );
+            position: relative;
+        }
+
+        /* 黑色条纹 */
+        .retro-label::before {
+            content: '';
+            position: absolute;
+            top: 55%;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #000;
+        }
+
+        /* 磁带窗口区域 */
+        .tape-window {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 280px;
+            height: 100px;
+            background: linear-gradient(145deg, #1a1a1a 0%, #0a0a0a 100%);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 
+                inset 0 3px 8px rgba(0, 0, 0, 0.8),
+                0 1px 2px rgba(255, 255, 255, 0.1);
+        }
+
+        /* 磁带条 */
+        .tape-strip {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 200px;
+            height: 40px;
+            background: linear-gradient(
+                180deg,
+                #3d2817 0%,
+                #5a3d23 20%,
+                #3d2817 40%,
+                #2a1a0f 60%,
+                #3d2817 80%,
+                #5a3d23 100%
+            );
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        /* 齿轮转轴容器 */
+        .reel-container {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 70px;
+            height: 70px;
+        }
+
+        .reel-container.left {
+            left: 25px;
+        }
+
+        .reel-container.right {
+            right: 25px;
+        }
+
+        /* 齿轮 */
+        .gear {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            animation: none;
+        }
+
+        .gear.spinning {
+            animation: rotate 2s linear infinite;
+        }
+
+        .gear.spinning.fast {
+            animation: rotate 0.5s linear infinite;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* 齿轮外圈 */
+        .gear-outer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 4px solid #8a8a8a;
+            border-radius: 50%;
+            background: 
+                repeating-conic-gradient(
+                    from 0deg,
+                    #6a6a6a 0deg 10deg,
+                    #8a8a8a 10deg 20deg
+                );
+            box-shadow: 
+                0 0 0 2px #4a4a4a,
+                inset 0 2px 4px rgba(255, 255, 255, 0.3),
+                inset 0 -2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        /* 齿轮内圈空心 */
+        .gear-inner {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 40px;
+            height: 40px;
+            border: 3px solid #5a5a5a;
+            border-radius: 50%;
+            background: transparent;
+            box-shadow: 
+                inset 0 2px 4px rgba(0, 0, 0, 0.5),
+                0 1px 2px rgba(255, 255, 255, 0.2);
+        }
+
+        /* 齿轮中心 */
+        .gear-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 12px;
+            height: 12px;
+            background: linear-gradient(145deg, #aaa 0%, #666 100%);
+            border-radius: 50%;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+        }
+
+        /* 螺丝细节 */
+        .screw {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #8a7a64 0%, #6a5a44 100%);
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        .screw::before {
+            content: 'x';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 8px;
+            color: rgba(0, 0, 0, 0.5);
+            font-weight: bold;
+        }
+
+        .screw.top-left {
+            top: 10px;
+            left: 10px;
+        }
+
+        .screw.top-right {
+            top: 10px;
+            right: 10px;
+        }
+
+        .screw.bottom-left {
+            bottom: 10px;
+            left: 10px;
+        }
+
+        .screw.bottom-right {
+            bottom: 10px;
+            right: 10px;
+        }
+
+        /* 磁带底部孔洞 */
+        .bottom-holes {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .hole {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #333;
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        .center-hole {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #333;
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        /* 棱镜和彩虹效果 */
+        .prism-container {
+            position: absolute;
+            right: 30px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 60px;
+            height: 60px;
+        }
+
+        .prism {
+            width: 0;
+            height: 0;
+            border-left: 20px solid transparent;
+            border-right: 20px solid transparent;
+            border-bottom: 35px solid rgba(255, 255, 255, 0.9);
+            position: absolute;
+            left: 10px;
+            top: 5px;
+            filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.5));
+        }
+
+        .rainbow-beam {
+            position: absolute;
+            right: -50px;
+            top: 50%;
+            width: 60px;
+            height: 4px;
+            background: linear-gradient(
+                90deg,
+                #ff0000 0%,
+                #ff7f00 16%,
+                #ffff00 33%,
+                #00ff00 50%,
+                #0000ff 66%,
+                #4b0082 83%,
+                #9400d3 100%
+            );
+            transform-origin: left center;
+            opacity: 0.8;
+        }
+
+        .rainbow-beam:nth-child(2) { transform: rotate(-3deg); top: 45%; height: 3px; }
+        .rainbow-beam:nth-child(3) { transform: rotate(-1deg); top: 48%; height: 4px; }
+        .rainbow-beam:nth-child(4) { transform: rotate(1deg); top: 52%; height: 4px; }
+        .rainbow-beam:nth-child(5) { transform: rotate(3deg); top: 55%; height: 3px; }
+
+        /* 专辑文字 */
+        .album-text {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #d4af37;
+            font-size: 14px;
+            font-weight: bold;
+            letter-spacing: 3px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+        }
+
+        .album-text .title {
+            font-size: 18px;
+            margin-bottom: 5px;
+            color: #fff;
+        }
+
+        .album-text .artist {
+            font-size: 12px;
+            color: #d4af37;
+        }
+
+        /* 控制面板 */
+        .controls {
+            width: 380px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            padding: 25px 0;
+            background: linear-gradient(145deg, #2a2a3e 0%, #1a1a2e 100%);
+            border-radius: 20px;
+            box-shadow: 
+                0 15px 35px rgba(0, 0, 0, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(139, 69, 19, 0.2);
+        }
+
+        /* 控制按钮基础样式 */
+        .control-btn {
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        /* 金属质感效果 */
+        .control-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-radius: inherit;
+            background: linear-gradient(
+                145deg,
+                rgba(255, 255, 255, 0.4) 0%,
+                transparent 50%,
+                rgba(0, 0, 0, 0.2) 100%
+            );
+            pointer-events: none;
+        }
+
+        .control-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* 播放/暂停按钮 */
+        .btn-play {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #d9ceb2 0%, #c8b898 50%, #8a7a64 100%);
+            box-shadow: 
+                0 3px 10px rgba(0, 0, 0, 0.2),
+                inset 0 1px 2px rgba(255, 255, 255, 0.4),
+                inset 0 -1px 2px rgba(0, 0, 0, 0.2);
+            border: 1px solid #8a7a64;
+        }
+
+        .btn-play:hover {
+            box-shadow: 
+                0 4px 12px rgba(0, 0, 0, 0.3),
+                inset 0 1px 2px rgba(255, 255, 255, 0.5),
+                inset 0 -1px 2px rgba(0, 0, 0, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .btn-play svg {
+            width: 24px;
+            height: 24px;
+            fill: #333;
+        }
+
+        /* 快进/后退按钮 */
+        .btn-skip {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #d9ceb2 0%, #c8b898 50%, #8a7a64 100%);
+            box-shadow: 
+                0 2px 8px rgba(0, 0, 0, 0.2),
+                inset 0 1px 2px rgba(255, 255, 255, 0.4),
+                inset 0 -1px 2px rgba(0, 0, 0, 0.2);
+            border: 1px solid #8a7a64;
+        }
+
+        .btn-skip:hover {
+            box-shadow: 
+                0 3px 10px rgba(0, 0, 0, 0.3),
+                inset 0 1px 2px rgba(255, 255, 255, 0.5),
+                inset 0 -1px 2px rgba(0, 0, 0, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .btn-skip svg {
+            width: 18px;
+            height: 18px;
+            fill: #333;
+        }
+
+        /* 录音按钮 */
+        .btn-record {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #d9ceb2 0%, #c8b898 50%, #8a7a64 100%);
+            box-shadow: 
+                0 2px 8px rgba(0, 0, 0, 0.2),
+                inset 0 1px 2px rgba(255, 255, 255, 0.4),
+                inset 0 -1px 2px rgba(0, 0, 0, 0.2);
+            border: 1px solid #8a7a64;
+        }
+
+        .btn-record:hover {
+            box-shadow: 
+                0 3px 10px rgba(0, 0, 0, 0.3),
+                inset 0 1px 2px rgba(255, 255, 255, 0.5),
+                inset 0 -1px 2px rgba(0, 0, 0, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .btn-record.recording {
+            animation: pulse 1s ease-in-out infinite;
+            background: linear-gradient(145deg, #c83c3c 0%, #a83333 50%, #882a2a 100%);
+            border-color: #882a2a;
+        }
+
+        @keyframes pulse {
+            0%, 100% { 
+                box-shadow: 
+                    0 2px 8px rgba(200, 60, 60, 0.3),
+                    inset 0 1px 2px rgba(255, 255, 255, 0.4),
+                    inset 0 -1px 2px rgba(0, 0, 0, 0.2);
+            }
+            50% { 
+                box-shadow: 
+                    0 4px 15px rgba(200, 60, 60, 0.5),
+                    inset 0 1px 2px rgba(255, 255, 255, 0.4),
+                    inset 0 -1px 2px rgba(0, 0, 0, 0.2);
+            }
+        }
+
+        .btn-record.recording svg {
+            fill: #fff;
+        }
+
+        .btn-record svg {
+            width: 18px;
+            height: 18px;
+            fill: #333;
+        }
+
+        /* 歌曲信息 */
+        .track-info {
+            width: 380px;
+            text-align: center;
+            color: #fff;
+            margin-top: 10px;
+        }
+
+        .track-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: #d4af37;
+            margin-bottom: 5px;
+            letter-spacing: 1px;
+        }
+
+        .track-artist {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .track-album {
+            font-size: 12px;
+            color: rgba(212, 175, 55, 0.8);
+            margin-top: 2px;
+        }
+
+        /* 进度条 */
+        .progress-container {
+            width: 380px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #8B4513 0%, #D2B48C 100%);
+            border-radius: 2px;
+            transition: width 0.1s linear;
+        }
+
+        /* 时间显示 */
+        .time-display {
+            display: flex;
+            justify-content: space-between;
+            width: 380px;
+            margin-top: 8px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* 歌词显示 */
+        .lyrics-container {
+            width: 380px;
+            background: linear-gradient(145deg, rgba(20, 20, 40, 0.8) 0%, rgba(40, 10, 30, 0.8) 100%);
+            border-radius: 20px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 
+                0 8px 20px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(139, 69, 19, 0.2);
+        }
+
+        .lyrics-title {
+            font-size: 14px;
+            color: #d4af37;
+            font-weight: 600;
+            margin-bottom: 12px;
+            text-align: center;
+            letter-spacing: 1px;
+        }
+
+        .lyrics-content {
+            min-height: 100px;
+            max-height: 120px;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 10px 0;
+        }
+
+        .lyrics-line {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 14px;
+            line-height: 1.6;
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            padding: 2px 0;
+            opacity: 0.8;
+            transform: translateY(0);
+        }
+
+        .lyrics-line.active {
+            color: #d4af37;
+            font-size: 16px;
+            font-weight: 600;
+            opacity: 1;
+            transform: translateY(-8px) scale(1.05);
+        }
+
+        .lyrics-line.next {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
+            opacity: 0.6;
+            transform: translateY(8px);
+        }
+
+        /* 音频元素隐藏 */
+        audio {
+            display: none;
+        }
+
+        /* 提示信息 */
+        .tooltip {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: #d4af37;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+            z-index: 200;
+        }
+
+        .tooltip.show {
+            opacity: 1;
+        }
+
+        /* 响应式 */
+        @media (max-width: 480px) {
+            .cassette-case {
+                width: 320px;
+                height: 200px;
+            }
+
+            .tape-window {
+                width: 240px;
+                height: 85px;
+            }
+
+            .reel-container {
+                width: 60px;
+                height: 60px;
+            }
+
+            .reel-container.left {
+                left: 20px;
+            }
+
+            .reel-container.right {
+                right: 20px;
+            }
+
+            .gear-inner {
+                width: 35px;
+                height: 35px;
+            }
+
+            .controls {
+                padding: 20px 30px;
+                gap: 15px;
+            }
+
+            .btn-play {
+                width: 60px;
+                height: 60px;
+            }
+
+            .btn-skip,
+            .btn-record {
+                width: 45px;
+                height: 45px;
+            }
+
+            .progress-container,
+            .time-display,
+            .lyrics-container {
+                width: 320px;
+            }
+
+            .share-buttons {
+                top: 10px;
+                right: 10px;
+                gap: 8px;
+            }
+
+            .share-btn {
+                width: 38px;
+                height: 38px;
+            }
+
+            .share-btn svg {
+                width: 18px;
+                height: 18px;
+            }
+        }
+
+        /* iPhone 13 屏幕适配 */
+        @media screen and (device-width: 390px) and (device-height: 844px) {
+            /* 适配 iPhone 13 屏幕尺寸 */
+            .cassette-case {
+                width: 350px;
+                height: 218px;
+            }
+
+            .tape-window {
+                width: 262px;
+                height: 94px;
+            }
+
+            .reel-container {
+                width: 66px;
+                height: 66px;
+            }
+
+            .reel-container.left {
+                left: 22px;
+            }
+
+            .reel-container.right {
+                right: 22px;
+            }
+
+            .gear-inner {
+                width: 38px;
+                height: 38px;
+            }
+
+            .controls {
+                width: 350px;
+                padding: 25px 0;
+                gap: 15px;
+            }
+
+            .btn-play {
+                width: 65px;
+                height: 65px;
+            }
+
+            .btn-skip,
+            .btn-record {
+                width: 48px;
+                height: 48px;
+            }
+
+            .progress-container,
+            .time-display,
+            .lyrics-container {
+                width: 350px;
+            }
+
+            .share-buttons {
+                top: 15px;
+                right: 15px;
+                gap: 10px;
+            }
+
+            .share-btn {
+                width: 42px;
+                height: 42px;
+            }
+
+            .share-btn svg {
+                width: 20px;
+                height: 20px;
+            }
+        }
+
+        /* 竖屏模式优化 */
+        @media screen and (orientation: portrait) {
+            /* 确保在竖屏模式下良好显示 */
+            body {
+                min-height: 100vh;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: flex-start;
+                padding: 20px 10px;
+                box-sizing: border-box;
+            }
+
+            .music-player {
+                max-width: 100%;
+                width: 100%;
+                max-width: 380px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 背景装饰 -->
+    <div class="bg-decoration"></div>
+
+    <!-- 分享按钮 -->
+    <div class="share-buttons">
+        <button class="share-btn" onclick="shareTo('weibo')" title="分享到微博">
+            <svg viewBox="0 0 24 24">
+                <path d="M10.098 20.323c-3.977.391-7.414-1.406-7.672-4.02-.259-2.609 2.759-5.047 6.74-5.441 3.979-.394 7.413 1.404 7.671 4.018.259 2.6-2.759 5.049-6.739 5.443zM9.05 17.219c-.384.616-1.208.884-1.829.602-.612-.279-.793-.991-.406-1.593.379-.595 1.176-.861 1.793-.601.622.263.82.972.442 1.592zm1.27-1.627c-.141.237-.449.353-.689.253-.236-.09-.313-.361-.177-.586.138-.227.436-.346.672-.24.239.09.315.36.194.573zm.176-2.719c-1.893-.493-4.033.45-4.857 2.118-.836 1.704-.026 3.591 1.886 4.21 1.983.64 4.318-.341 5.132-2.179.8-1.793-.201-3.642-2.161-4.149zm7.563-1.224c-.346-.105-.579-.18-.405-.649.381-1.025.421-1.905.001-2.535-.789-1.181-2.924-1.109-5.382-.031 0 0-.768.334-.571-.271.381-1.217.324-2.229-.27-2.817-1.344-1.332-4.918.045-7.99 3.073C1.87 10.963.917 13.511.917 15.614c0 4.042 5.172 6.505 10.229 6.505 6.61 0 11.006-3.86 11.006-6.912 0-1.848-1.566-2.898-2.993-3.558zm.636-3.931c-.164-.391-.549-.596-.914-.596-.104 0-.211.016-.318.051l-1.081.353c-.391.127-.603.541-.475.932.127.391.541.603.932.475l1.081-.353c.391-.127.603-.541.475-.932zm2.082-1.229c-.457-1.084-1.524-1.659-2.537-1.659-.291 0-.586.045-.873.139l-1.081.353c-.521.17-.805.732-.635 1.253.17.521.732.805 1.253.635l1.081-.353c.286-.093.594.019.753.396.159.377.067.793-.219.886l-1.081.353c-.521.17-.805.732-.635 1.253.17.521.732.805 1.253.635l1.081-.353c1.014-.331 1.589-1.397 1.429-2.482-.033-.224-.096-.437-.18-.641z"/>
+            </svg>
+        </button>
+    </div>
+
+    <!-- 主播放器容器 -->
+    <div class="player-container">
+        <!-- 磁带外壳 -->
+        <div class="cassette-case">
+            <div class="cassette">
+                <!-- 螺丝 -->
+                <div class="screw top-left"></div>
+                <div class="screw top-right"></div>
+                <div class="screw bottom-left"></div>
+                <div class="screw bottom-right"></div>
+
+                <!-- 标签区域 -->
+                <div class="label-area">
+                    <div class="retro-label"></div>
+                </div>
+
+                <!-- 磁带窗口 -->
+                <div class="tape-window">
+                    <!-- 磁带条 -->
+                    <div class="tape-strip"></div>
+                    
+                    <!-- 左齿轮 -->
+                    <div class="reel-container left">
+                        <div class="gear" id="leftGear">
+                            <div class="gear-outer"></div>
+                            <div class="gear-inner"></div>
+                            <div class="gear-center"></div>
+                        </div>
+                    </div>
+
+                    <!-- 右齿轮 -->
+                    <div class="reel-container right">
+                        <div class="gear" id="rightGear">
+                            <div class="gear-outer"></div>
+                            <div class="gear-inner"></div>
+                            <div class="gear-center"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 底部孔洞 -->
+                <div class="bottom-holes">
+                    <div class="hole"></div>
+                    <div class="hole"></div>
+                    <div class="center-hole"></div>
+                    <div class="hole"></div>
+                    <div class="hole"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 歌曲信息 -->
+        <div class="track-info">
+            <div class="track-name" id="trackName">加载中...</div>
+            <div class="track-artist" id="trackArtist"></div>
+            <div class="track-album" id="trackAlbum"></div>
+        </div>
+
+        <!-- 进度条 -->
+        <div class="progress-container">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+        <div class="time-display">
+            <span id="currentTime">0:00</span>
+            <span id="totalTime">6:53</span>
+        </div>
+
+        <!-- 歌词显示 -->
+        <div class="lyrics-container">
+            <div class="lyrics-title">歌词</div>
+            <div class="lyrics-content" id="lyricsContent">
+                <div class="lyrics-line">点击播放开始显示歌词</div>
+            </div>
+        </div>
+
+        <!-- 控制按钮 -->
+        <div class="controls">
+            <!-- 上一首 -->
+            <button class="control-btn btn-skip" onclick="playPrevious()" title="上一首">
+                <svg viewBox="0 0 24 24">
+                    <path d="M6 6h2v12H6zm3.5 6l8.5 6V6l-8.5 6z"/>
+                </svg>
+            </button>
+
+            <!-- 后退 -->
+            <button class="control-btn btn-skip" onclick="skipBackward()" title="后退">
+                <svg viewBox="0 0 24 24">
+                    <path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"/>
+                </svg>
+            </button>
+
+            <!-- 播放/暂停 -->
+            <button class="control-btn btn-play" id="playBtn" onclick="togglePlay()" title="播放/暂停">
+                <svg id="playIcon" viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z"/>
+                </svg>
+                <svg id="pauseIcon" viewBox="0 0 24 24" style="display: none;">
+                    <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+                </svg>
+            </button>
+
+            <!-- 快进 -->
+            <button class="control-btn btn-skip" onclick="skipForward()" title="快进">
+                <svg viewBox="0 0 24 24">
+                    <path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"/>
+                </svg>
+            </button>
+
+            <!-- 下一首 -->
+            <button class="control-btn btn-skip" onclick="playNext()" title="下一首">
+                <svg viewBox="0 0 24 24">
+                    <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>
+                </svg>
+            </button>
+
+            <!-- 录音 -->
+            <button class="control-btn btn-record" id="recordBtn" onclick="toggleRecord()" title="录音">
+                <svg viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="6"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- 音频元素 -->
+    <audio id="audioPlayer" preload="metadata">
+        <!-- 使用示例音频URL，实际使用时替换为真实音乐文件 -->
+        <source src="http://music.163.com/song/media/outer/url?id=4235817.mp3" type="audio/mpeg">
+    </audio>
+
+    <!-- 提示信息 -->
+    <div class="tooltip" id="tooltip"></div>
+
+    <script>
+        // 获取元素
+        const audio = document.getElementById('audioPlayer');
+        const playBtn = document.getElementById('playBtn');
+        const playIcon = document.getElementById('playIcon');
+        const pauseIcon = document.getElementById('pauseIcon');
+        const leftGear = document.getElementById('leftGear');
+        const rightGear = document.getElementById('rightGear');
+        const progressBar = document.getElementById('progressBar');
+        const currentTimeEl = document.getElementById('currentTime');
+        const totalTimeEl = document.getElementById('totalTime');
+        const recordBtn = document.getElementById('recordBtn');
+        const tooltip = document.getElementById('tooltip');
+
+        let isPlaying = false;
+        let isRecording = false;
+
+        // 格式化时间
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        // 显示提示
+        function showTooltip(message) {
+            tooltip.textContent = message;
+            tooltip.classList.add('show');
+            setTimeout(() => {
+                tooltip.classList.remove('show');
+            }, 2000);
+        }
+
+        // 播放/暂停
+        function togglePlay() {
+            if (isPlaying) {
+                audio.pause();
+                isPlaying = false;
+                playIcon.style.display = 'block';
+                pauseIcon.style.display = 'none';
+                leftGear.classList.remove('spinning');
+                rightGear.classList.remove('spinning');
+            } else {
+                audio.play().then(() => {
+                    isPlaying = true;
+                    playIcon.style.display = 'none';
+                    pauseIcon.style.display = 'block';
+                    leftGear.classList.add('spinning');
+                    rightGear.classList.add('spinning');
+                }).catch(err => {
+                    console.error('播放失败:', err);
+                    showTooltip('音频加载失败，请检查网络连接');
+                });
+            }
+        }
+
+        // 快进
+        function skipForward() {
+            audio.currentTime = Math.min(audio.currentTime + 10, audio.duration);
+            showTooltip('快进 10 秒');
+            
+            // 临时加速动画
+            if (isPlaying) {
+                leftGear.classList.add('fast');
+                rightGear.classList.add('fast');
+                setTimeout(() => {
+                    leftGear.classList.remove('fast');
+                    rightGear.classList.remove('fast');
+                }, 500);
+            }
+        }
+
+        // 后退
+        function skipBackward() {
+            audio.currentTime = Math.max(audio.currentTime - 10, 0);
+            showTooltip('后退 10 秒');
+            
+            // 临时加速动画（反向）
+            if (isPlaying) {
+                leftGear.style.animationDirection = 'reverse';
+                rightGear.style.animationDirection = 'reverse';
+                setTimeout(() => {
+                    leftGear.style.animationDirection = 'normal';
+                    rightGear.style.animationDirection = 'normal';
+                }, 500);
+            }
+        }
+
+        // 录音
+        function toggleRecord() {
+            isRecording = !isRecording;
+            if (isRecording) {
+                recordBtn.classList.add('recording');
+                showTooltip('开始录音...');
+            } else {
+                recordBtn.classList.remove('recording');
+                showTooltip('录音已保存');
+            }
+        }
+
+        // 更新进度条
+        audio.addEventListener('timeupdate', () => {
+            if (audio.duration) {
+                const progress = (audio.currentTime / audio.duration) * 100;
+                progressBar.style.width = progress + '%';
+                currentTimeEl.textContent = formatTime(audio.currentTime);
+                
+                // 同步显示歌词
+                showLyrics();
+            }
+        });
+
+        // 加载完成
+        audio.addEventListener('loadedmetadata', () => {
+            totalTimeEl.textContent = formatTime(audio.duration);
+        });
+
+        // 播放结束
+        audio.addEventListener('ended', () => {
+            // 自动播放下一首
+            playNext();
+        });
+        
+        // 键盘快捷键
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                togglePlay();
+            } else if (e.code === 'ArrowLeft') {
+                skipBackward();
+            } else if (e.code === 'ArrowRight') {
+                skipForward();
+            } else if (e.code === 'ArrowUp') {
+                e.preventDefault();
+                playPrevious();
+            } else if (e.code === 'ArrowDown') {
+                e.preventDefault();
+                playNext();
+            }
+        });
+
+        // 分享功能
+        function shareTo(platform) {
+            const url = encodeURIComponent(window.location.href);
+            const title = encodeURIComponent('复古磁带播放器 - Pink Floyd');
+            const desc = encodeURIComponent('正在听 Pink Floyd 的《月之暗面》，这个复古磁带播放器太酷了！');
+            
+            // 只保留微博分享功能
+            if (platform === 'weibo') {
+                const shareUrl = `https://service.weibo.com/share/share.php?url=${url}&title=${desc}`;
+                window.open(shareUrl, '_blank', 'width=600,height=400');
+            }
+        }
+
+        // 播放列表
+        const playlist = [
+            {
+                id: '4235817',
+                name: 'Wish You Were Here',
+                artist: 'Pink Floyd',
+                album: 'Wish You Were Here',
+                cover: 'http://p1.music.126.net/5sDLKpZW98XER9uuQrOHOw==/109951172026793754.jpg?param=300x300',
+                url: 'http://music.163.com/song/media/outer/url?id=4235817.mp3',
+                lyrics: `[00:00.000] 作词 : Roger Waters
+[00:01.000] 作曲 : David Gilmour/Roger Waters
+[01:35.434]So, so you think you can tell
+[01:41.933]Heaven from Hell
+[01:45.694]Blue skies from pain
+[01:50.182]Can you tell a green field from a cold steel rail?
+[01:58.682]A smile from a veil?
+[02:02.676]Do you think you can tell?
+[02:07.179]And did they get you to trade
+[02:10.934]Your heroes for ghosts?
+[02:15.180]Hot ashes for trees?
+[02:19.173]Hot air for a cool breeze?
+[02:22.932]Cold comfort for change?
+[02:27.184]And did you exchange
+[02:30.427]A walk on part in the war
+[02:34.186]For a lead role in a cage?
+[03:16.690]How I wish, how I Wish You Were Here
+[03:23.181]We're just two lost souls swimming in a fish bowl
+[03:28.441]Year after year
+[03:32.932]Running over the same old ground
+[03:36.681]What have we found?
+[03:38.932]The same old fears
+[03:42.435]Wish You Were Here`
+            },
+            {
+                id: '18309310',
+                name: 'Comfortably Numb',
+                artist: 'Pink Floyd',
+                album: 'The Wall',
+                cover: 'http://p1.music.126.net/WaBh0-9dmRCQo3mdtrWY2Q==/109951172026873767.jpg?param=300x300',
+                url: 'http://music.163.com/song/media/outer/url?id=18309310.mp3',
+                lyrics: `[00:00.000] 作词 : David Gilmour/Roger Waters
+[00:01.000] 作曲 : David Gilmour/Roger Waters
+[00:42.847]Hello.
+[00:44.667]Is there anybody in there?
+[00:47.146]Just nod if you can hear me.
+[00:52.305]Is there anyone home?
+[00:56.460]Come on, now.
+[00:58.585]I hear you're feeling down.
+[01:04.198]Well I can ease your pain,
+[01:06.926]Get you on your feet again.
+[01:11.600]Relax.
+[01:14.198]I need some information first.
+[01:19.370]Just the basic facts:
+[01:22.100]Can you show me where it hurts?
+[01:27.500]There is no pain, you are receding.
+[01:34.500]A distant ship's smoke on the horizon.
+[01:42.390]You are only coming through in waves.
+[01:49.114]Your lips move but I can't hear what you're sayin'.
+[01:57.660]When I was a child I had a fever.
+[02:04.459]My hands felt just like two balloons.
+[02:12.358]Now I got that feeling once again.
+[02:16.177]I can't explain, you would not understand.
+[02:21.296]This is not how I am.
+[02:27.585]I have become comfortably numb.
+[03:08.960]I have become comfortably numb.
+[03:20.197]Ok.
+[03:23.197]Just a little pinprick.
+[03:26.516]There'll be no more --Aaaaaahhhhh!
+[03:30.137]But you may feel a little sick.
+[03:35.168]Can you stand up?
+[03:38.997]I do believe it's working. Good.
+[03:41.346]That'll keep you going for the show.
+[03:46.396]Come on it's time to go.
+[03:51.960]There is no pain, you are receding.
+[03:59.546]A distant ship's smoke on the horizon.
+[04:06.137]You are only coming through in waves.
+[04:13.527]Your lips move but I can't hear what you're sayin'.
+[04:20.397]When I was a child I caught a fleeting glimpse,
+[04:28.397]Out of the corner of my eye.
+[04:36.989]I turned to look but it was gone.
+[04:40.489]I cannot put my finger on it now.
+[04:45.998]The child is grown, the dream is gone.
+[04:51.169]I have become comfortably numb.`
+            },
+            {
+                id: '4235820',
+                name: 'Time',
+                artist: 'Pink Floyd',
+                album: 'The Wall',
+                cover: 'http://p2.music.126.net/5sDLKpZW98XER9uuQrOHOw==/109951172026793754.jpg?param=300x300',
+                url: 'http://music.163.com/song/media/outer/url?id=4235820.mp3',
+                lyrics: `[00:00.00] 作词 : Roger Waters
+[00:00.00] 作曲 : David Gilmour/Nick Mason/Roger Waters/Richard Wright
+[00:00.00] Ticking away  the moments that make up a dull day
+[01:49.65]You  fritter and waste the hours in an offhand way.
+[01:59.46]Kicking around on a piece of ground in your home town
+[02:06.69]Waiting for someone or something to show you the way.
+[02:13.98]Tired of lying in the sunshine staying home to watch the rain.
+[02:21.57]You are young and life is long  and there is time to kill today.
+[02:29.61]And then one day you find  ten years have got behind you.
+[02:36.69]No one told you when to run, you missed the starting gun.
+[03:25.35]So you run  and you run to catch up with the sun but it's sinking
+[04:18.27]Racing around  to come up behind you again.
+[04:25.26]The sun is the same in a relative way but you're older,
+[04:32.43]Shorter of breath  and one day closer to death.
+[04:39.72]Every year is getting shorter  never seem to find the time.
+[04:47.10]Plans that either come to naught  or half a page  of scribbled lines
+[04:54.51]Hanging on in quiet  desperation is the English way
+[05:01.89]The time is gone, the song is over,
+[05:05.79]Thought I'd something more to say.
+[05:34.14]I like to be here, but I can't.
+[05:42.18]When I come home  already tired.
+[05:49.26]Scroll to warm my body  beside the fire.`
+            }
+        ];
+        
+        let currentLyrics = [];
+        let currentLyricIndex = -1;
+        
+        let currentSongIndex = 0;
+        
+        // 播放上一首
+        function playPrevious() {
+            currentSongIndex = (currentSongIndex - 1 + playlist.length) % playlist.length;
+            playSong(currentSongIndex);
+        }
+        
+        // 播放下一首
+        function playNext() {
+            currentSongIndex = (currentSongIndex + 1) % playlist.length;
+            playSong(currentSongIndex);
+        }
+        
+        // 解析歌词
+        function parseLyrics(lyricsText) {
+            const lyrics = [];
+            const lines = lyricsText.split('\n');
+            const timeRegex = /\[(\d{2}):(\d{2})\.(\d{2,3})\]/g;
+            
+            lines.forEach(line => {
+                const timeMatches = [...line.matchAll(timeRegex)];
+                const text = line.replace(timeRegex, '').trim();
+                
+                timeMatches.forEach(match => {
+                    const [, minutes, seconds, milliseconds] = match;
+                    const time = parseInt(minutes) * 60 + parseInt(seconds) + parseInt(milliseconds) / 1000;
+                    lyrics.push({ time, text });
+                });
+            });
+            
+            // 按时间排序
+            return lyrics.sort((a, b) => a.time - b.time);
+        }
+        
+        // 显示歌词
+        function showLyrics() {
+            const currentTime = audio.currentTime;
+            const lyricsContent = document.getElementById('lyricsContent');
+            
+            // 找到当前应该显示的歌词
+            let newIndex = -1;
+            for (let i = 0; i < currentLyrics.length; i++) {
+                if (currentLyrics[i].time <= currentTime) {
+                    newIndex = i;
+                } else {
+                    break;
+                }
+            }
+            
+            if (newIndex !== currentLyricIndex) {
+                currentLyricIndex = newIndex;
+                
+                if (currentLyricIndex >= 0 && currentLyricIndex < currentLyrics.length) {
+                    // 清空现有歌词
+                    lyricsContent.innerHTML = '';
+                    
+                    // 显示当前歌词（高亮）
+                    const currentLine = document.createElement('div');
+                    currentLine.className = 'lyrics-line active';
+                    currentLine.textContent = currentLyrics[currentLyricIndex].text;
+                    lyricsContent.appendChild(currentLine);
+                    
+                    // 显示下一句歌词（如果有）
+                    if (currentLyricIndex + 1 < currentLyrics.length) {
+                        const nextLine = document.createElement('div');
+                        nextLine.className = 'lyrics-line next';
+                        nextLine.textContent = currentLyrics[currentLyricIndex + 1].text;
+                        lyricsContent.appendChild(nextLine);
+                    }
+                } else {
+                    // 没有歌词时显示提示
+                    lyricsContent.innerHTML = '';
+                    const noLyricsLine = document.createElement('div');
+                    noLyricsLine.className = 'lyrics-line';
+                    noLyricsLine.textContent = '暂无歌词';
+                    lyricsContent.appendChild(noLyricsLine);
+                }
+            }
+        }
+        
+        // 播放指定歌曲
+        function playSong(index) {
+            const song = playlist[index];
+            if (song) {
+                audio.src = song.url;
+                document.getElementById('trackName').textContent = song.name;
+                document.getElementById('trackArtist').textContent = song.artist;
+                document.getElementById('trackAlbum').textContent = song.album || '';
+                
+                // 加载歌词
+                if (song.lyrics) {
+                    currentLyrics = parseLyrics(song.lyrics);
+                    currentLyricIndex = -1;
+                } else {
+                    currentLyrics = [];
+                    currentLyricIndex = -1;
+                    document.getElementById('lyricsContent').innerHTML = '<div class="lyrics-line">该歌曲暂无歌词</div>';
+                }
+                
+                audio.play().then(() => {
+                    isPlaying = true;
+                    playIcon.style.display = 'none';
+                    pauseIcon.style.display = 'block';
+                    leftGear.classList.add('spinning');
+                    rightGear.classList.add('spinning');
+                }).catch(err => {
+                    console.error('播放失败:', err);
+                    showTooltip('音频加载失败，请检查网络连接');
+                });
+                showTooltip(`正在播放: ${song.name} - ${song.artist}`);
+            }
+        }
+        
+        // 初始化
+        showTooltip('按空格键播放/暂停');
+        
+        // 页面加载完成后播放默认歌曲
+        window.addEventListener('load', () => {
+            playSong(0);
+        });
+    </script>
+</body>
+</html>

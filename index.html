@@ -1,0 +1,1885 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>复古磁带播放器 - Pink Floyd</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            background: #000000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: auto;
+            padding: 20px;
+        }
+
+        /* iPhone 13 背景层容器 */
+        .iphone-container {
+            position: relative;
+            width: 100%;
+            max-width: 390px; /* iPhone 13 宽度 */
+            aspect-ratio: 1170/2532; /* iPhone 13 宽高比 */
+            background: linear-gradient(145deg, #1a3834 0%, #20443e 100%);
+            border-radius: 48px;
+            box-shadow: 
+                0 20px 60px rgba(0, 0, 0, 0.5),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            padding: 60px 20px 60px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* 顶部刘海区域 */
+        .iphone-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 30px;
+            background: #1a3834;
+            border-bottom-left-radius: 15px;
+            border-bottom-right-radius: 15px;
+            z-index: 20;
+        }
+
+
+
+        /* 背景装饰 */
+        .bg-decoration {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .bg-decoration::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(212, 175, 55, 0.1) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        /* 专辑封面容器 */
+        .album-cover-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(145deg, #1a1a1a 0%, #0a0a0a 100%);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .album-cover {
+            width: 80%;
+            height: 80%;
+            object-fit: cover;
+            border-radius: 8px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        /* 歌词纯享容器 */
+        .lyrics-only-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(145deg, #1a1a1a 0%, #0a0a0a 100%);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .lyrics-only-content {
+            width: 90%;
+            height: 90%;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+
+
+        /* 分享按钮区域 */
+        .share-buttons {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 8px;
+            z-index: 100;
+            user-select: none;
+        }
+
+        .share-btn {
+            width: 30px;
+            height: 30px;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            background: transparent;
+            box-shadow: none;
+            backdrop-filter: none;
+        }
+
+        .share-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .share-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: #d9ceb2;
+        }
+
+        /* 分享选项面板 */
+        .share-options {
+            position: absolute;
+            top: 50px;
+            right: 0;
+            background: rgba(10, 40, 40, 0.95);
+            border-radius: 10px;
+            padding: 10px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            min-width: 120px;
+            z-index: 101;
+        }
+
+        .share-option-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            padding: 8px 12px;
+            margin-bottom: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            border: none;
+            border-radius: 6px;
+            color: #d9ceb2;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 12px;
+            font-family: 'Source Han Sans CN Light', sans-serif;
+        }
+
+        .share-option-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(-4px);
+        }
+
+        .share-option-btn:last-child {
+            margin-bottom: 0;
+        }
+
+        .share-option-btn svg {
+            width: 16px;
+            height: 16px;
+            fill: currentColor;
+        }
+
+        .share-option-btn span {
+            font-size: 11px;
+            font-family: 'Source Han Sans CN Light', sans-serif;
+        }
+
+        /* 主容器 */
+        .player-container {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            width: 100%;
+            max-width: 380px;
+        }
+
+        /* 滑动容器 */
+        .slide-container {
+            width: 100%;
+            max-width: 350px;
+            height: 218px;
+            overflow: hidden;
+            position: relative;
+            border-radius: 20px;
+        }
+
+        .slide-page {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            transition: transform 0.3s ease;
+        }
+
+        .page-1 {
+            left: 0;
+        }
+
+        .page-2 {
+            left: 100%;
+        }
+
+        .slide-container.slide-to-2 .page-1 {
+            transform: translateX(-100%);
+        }
+
+        .slide-container.slide-to-2 .page-2 {
+            transform: translateX(-100%);
+        }
+
+        /* 磁带外壳 */
+        .cassette-case {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                180deg,
+                rgba(0, 128, 128, 0.2) 0%,
+                rgba(0, 128, 128, 0.1) 50%,
+                rgba(0, 128, 128, 0.15) 100%
+            );
+            border-radius: 20px;
+            padding: 15px;
+            box-shadow: 
+                0 25px 50px rgba(0, 0, 0, 0.5),
+                inset 0 1px 0 rgba(0, 128, 128, 0.3),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 128, 128, 0.3);
+        }
+
+        /* 磁带主体 */
+        .cassette {
+            width: 100%;
+            height: 100%;
+            background: 
+                /* 复古米色质感 */
+                linear-gradient(145deg, #e8e0d0 0%, #d9ceb2 50%, #c8b898 100%);
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 
+                0 4px 15px rgba(0, 0, 0, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+        }
+
+        /* 磁带纹理效果 */
+        .cassette::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                /* 细微纹理 */
+                repeating-linear-gradient(
+                    90deg,
+                    transparent 0px,
+                    transparent 3px,
+                    rgba(0, 0, 0, 0.02) 3px,
+                    rgba(0, 0, 0, 0.02) 4px
+                );
+            pointer-events: none;
+        }
+
+        /* 顶部标签区域 */
+        .label-area {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            height: 115px;
+            background: #d9ceb2;
+            border-radius: 0;
+            overflow: hidden;
+            box-shadow: 
+                0 2px 8px rgba(0, 0, 0, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .label-area:hover {
+            transform: scale(1.02);
+        }
+
+        /* 复古标签 */
+        .retro-label {
+            width: 100%;
+            height: 100%;
+            background: 
+                /* 咖色上半部分，黑色下半部分 */
+                linear-gradient(
+                    180deg,
+                    #8B4513 0%,
+                    #8B4513 100%
+                );
+            position: relative;
+            clip-path: polygon(
+                12px 0%,
+                calc(100% - 12px) 0%,
+                100% 12px,
+                100% 100%,
+                0% 100%,
+                0% 12px
+            );
+        }
+
+        /* 转轴镂空区域 */
+        .retro-label::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, calc(-50% + 16px));
+            width: 184px;
+            height: 58px;
+            background: black;
+            border-radius: 29px;
+        }
+
+        /* 磁带窗口边框 */
+        .tape-window {
+            border: none;
+        }
+
+        /* 磁带底部网格纹理 */
+        .cassette::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 40px;
+            background: 
+                /* 网格纹理 */
+                linear-gradient(
+                    45deg,
+                    transparent 25%,
+                    rgba(0, 0, 0, 0.05) 25%,
+                    rgba(0, 0, 0, 0.05) 50%,
+                    transparent 50%,
+                    transparent 75%,
+                    rgba(0, 0, 0, 0.05) 75%
+                );
+            background-size: 8px 8px;
+        }
+
+        /* 螺丝细节 */
+        .screw {
+            position: absolute;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #8a7a64;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .screw::before {
+            content: '';
+            position: relative;
+            width: 6px;
+            height: 6px;
+            background: #8a7a64;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .screw::after {
+            content: '×';
+            position: absolute;
+            font-size: 8px;
+            font-weight: bold;
+            color: #d9ceb2;
+        }
+
+        .screw.top-left {
+            top: 8px;
+            left: 8px;
+        }
+
+        .screw.top-right {
+            top: 8px;
+            right: 8px;
+        }
+
+        .screw.bottom-left {
+            bottom: 8px;
+            left: 8px;
+        }
+
+        .screw.bottom-right {
+            bottom: 8px;
+            right: 8px;
+        }
+
+        /* 磁带计数器 */
+        .tape-counter {
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            width: 100%;
+            height: auto;
+            padding-top: 10px;
+        }
+
+        .counter-text {
+            font-size: 10px;
+            color: #d9ceb2;
+            font-family: 'Courier New', monospace;
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
+            box-shadow: none;
+            backdrop-filter: none;
+            border: none;
+            text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.5), -1px -1px 1px rgba(255, 255, 255, 0.1);
+        }
+
+        .counter-text span {
+            color: #d9ceb2;
+            font-weight: bold;
+        }
+
+        /* 磁带底部网格区域 */
+        .cassette::after {
+            content: '';
+            position: absolute;
+            top: 141px;
+            left: 20px;
+            right: 20px;
+            height: 77px;
+            background: 
+                /* 网格纹理 */
+                linear-gradient(
+                    45deg,
+                    #e8e0d0 25%,
+                    transparent 25%,
+                    transparent 50%,
+                    #e8e0d0 50%,
+                    #e8e0d0 75%,
+                    transparent 75%,
+                    transparent
+                ),
+                linear-gradient(
+                    -45deg,
+                    #e8e0d0 25%,
+                    transparent 25%,
+                    transparent 50%,
+                    #e8e0d0 50%,
+                    #e8e0d0 75%,
+                    transparent 75%,
+                    transparent
+                );
+            background-size: 10px 10px;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
+            clip-path: polygon(
+                25px 0%,
+                calc(100% - 25px) 0%,
+                100% 50px,
+                100% 100%,
+                0% 100%,
+                0% 50px
+            );
+        }
+
+        /* 磁带底部孔洞 */
+        .bottom-holes {
+            position: absolute;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 25px;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .hole {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #333;
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5);
+            position: relative;
+            top: 4px;
+        }
+
+        .bottom-holes .hole:first-child,
+        .bottom-holes .hole:last-child {
+            top: 6px;
+        }
+
+        .bottom-holes .hole:nth-child(2),
+        .bottom-holes .hole:nth-child(4) {
+            top: 2px;
+            border-radius: 6px;
+        }
+
+        .bottom-holes .hole:nth-child(1) {
+            position: relative;
+            left: -5px;
+        }
+
+        .bottom-holes .hole:nth-child(2) {
+            position: relative;
+            left: -5px;
+        }
+
+        .bottom-holes .hole:nth-child(4) {
+            position: relative;
+            right: -5px;
+        }
+
+        .bottom-holes .hole:nth-child(5) {
+            position: relative;
+            right: -5px;
+        }
+
+        .center-hole {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #8a7a64;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            top: -4px;
+        }
+
+        .center-hole::after {
+            content: '×';
+            position: absolute;
+            font-size: 8px;
+            font-weight: bold;
+            color: #d9ceb2;
+        }
+
+        /* 棱镜和彩虹效果 */
+        .prism-container {
+            position: absolute;
+            right: 30px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 60px;
+            height: 60px;
+        }
+
+        .prism {
+            width: 0;
+            height: 0;
+            border-left: 20px solid transparent;
+            border-right: 20px solid transparent;
+            border-bottom: 35px solid rgba(255, 255, 255, 0.9);
+            position: absolute;
+            left: 10px;
+            top: 5px;
+            filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.5));
+        }
+
+        .rainbow-beam {
+            position: absolute;
+            right: -50px;
+            top: 50%;
+            width: 60px;
+            height: 4px;
+            background: linear-gradient(
+                90deg,
+                #ff0000 0%,
+                #ff7f00 16%,
+                #ffff00 33%,
+                #00ff00 50%,
+                #0000ff 66%,
+                #4b0082 83%,
+                #9400d3 100%
+            );
+            transform-origin: left center;
+            opacity: 0.8;
+        }
+
+        .rainbow-beam:nth-child(2) { transform: rotate(-3deg); top: 45%; height: 3px; }
+        .rainbow-beam:nth-child(3) { transform: rotate(-1deg); top: 48%; height: 4px; }
+        .rainbow-beam:nth-child(4) { transform: rotate(1deg); top: 52%; height: 4px; }
+        .rainbow-beam:nth-child(5) { transform: rotate(3deg); top: 55%; height: 3px; }
+
+        /* 专辑文字 */
+        .album-text {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #d4af37;
+            font-size: 14px;
+            font-weight: bold;
+            letter-spacing: 3px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+        }
+
+        .album-text .title {
+            font-size: 18px;
+            margin-bottom: 5px;
+            color: #fff;
+        }
+
+        .album-text .artist {
+            font-size: 12px;
+            color: #d4af37;
+        }
+
+        /* 磁带窗口区域 */
+        .tape-window {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            height: 80px;
+            background: transparent;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: none;
+        }
+
+        /* 磁带条 */
+        .tape-strip {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 140px;
+            height: 30px;
+            background: transparent;
+            border-radius: 4px;
+            box-shadow: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 磁带刻度 */
+        .tape-strip::after {
+            content: '';
+            position: absolute;
+            font-size: 8px;
+            font-family: 'Courier New', monospace;
+            color: rgba(255, 255, 255, 0.7);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+            letter-spacing: 8px;
+        }
+
+        /* 齿轮转轴容器 */
+        .reel-container {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 40px;
+            height: 40px;
+        }
+
+        .reel-container.left {
+            left: 70px;
+        }
+
+        .reel-container.right {
+            right: 70px;
+        }
+
+        /* 齿轮 */
+        .gear {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            animation: none;
+        }
+
+        .gear.spinning {
+            animation: rotate 2s linear infinite;
+        }
+
+        .gear.spinning.fast {
+            animation: rotate 0.5s linear infinite;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* 快速旋转动画（翻面时使用） */
+        .gear.fast-rotate .gear-outer {
+            animation: fastRotate 0.2s linear infinite;
+        }
+
+        .gear.fast-rotate-reverse .gear-outer {
+            animation: fastRotate 0.2s linear infinite reverse;
+        }
+
+        @keyframes fastRotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* 齿轮外圈 */
+        .gear-outer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 3px solid #ffffff;
+            border-radius: 50%;
+            background: 
+                repeating-conic-gradient(
+                    from 0deg,
+                    #ffffff 0deg 10deg,
+                    #f0f0f0 10deg 20deg
+                );
+            box-shadow: 
+                0 0 0 1px #e0e0e0,
+                inset 0 1px 3px rgba(255, 255, 255, 0.3),
+                inset 0 -1px 3px rgba(0, 0, 0, 0.2);
+        }
+
+        /* 齿轮内圈空心 */
+        .gear-inner {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 26px;
+            height: 26px;
+            border: 2px solid #ffffff;
+            border-radius: 50%;
+            background: transparent;
+            box-shadow: 
+                inset 0 1px 3px rgba(0, 0, 0, 0.2),
+                0 1px 2px rgba(255, 255, 255, 0.5);
+        }
+
+        /* 齿轮中心 */
+        .gear-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 8px;
+            height: 8px;
+            background: #333;
+            border-radius: 50%;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        /* 控制面板 */
+        .controls {
+            width: 100%;
+            max-width: 350px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 15px 0;
+            background: linear-gradient(145deg, rgba(10, 40, 40, 0.6) 0%, rgba(20, 50, 50, 0.6) 100%);
+            border-radius: 20px;
+            box-shadow: 
+                0 10px 25px rgba(0, 0, 0, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 128, 128, 0.3);
+            margin-top: 10px;
+        }
+
+        /* 控制按钮基础样式 */
+        .control-btn {
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        /* 金属质感效果 */
+        .control-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-radius: inherit;
+            background: linear-gradient(
+                145deg,
+                rgba(255, 255, 255, 0.4) 0%,
+                transparent 50%,
+                rgba(0, 0, 0, 0.2) 100%
+            );
+            pointer-events: none;
+        }
+
+        .control-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* 播放/暂停按钮 */
+        .btn-play {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #d9ceb2 0%, #c8b898 50%, #8a7a64 100%);
+            box-shadow: 
+                0 2px 6px rgba(0, 0, 0, 0.2),
+                inset 0 1px 2px rgba(255, 255, 255, 0.4),
+                inset 0 -1px 2px rgba(0, 0, 0, 0.2);
+            border: 1px solid #8a7a64;
+        }
+
+        .btn-play:hover {
+            box-shadow: 
+                0 3px 8px rgba(0, 0, 0, 0.3),
+                inset 0 1px 2px rgba(255, 255, 255, 0.5),
+                inset 0 -1px 2px rgba(0, 0, 0, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .btn-play svg {
+            width: 18px;
+            height: 18px;
+            fill: #333;
+        }
+
+        /* 快进/后退按钮 */
+        .btn-skip {
+            width: 27px;
+            height: 27px;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #d9ceb2 0%, #c8b898 50%, #8a7a64 100%);
+            box-shadow: 
+                0 1px 4px rgba(0, 0, 0, 0.2),
+                inset 0 1px 2px rgba(255, 255, 255, 0.4),
+                inset 0 -1px 2px rgba(0, 0, 0, 0.2);
+            border: 1px solid #8a7a64;
+        }
+
+        .btn-skip:hover {
+            box-shadow: 
+                0 2px 6px rgba(0, 0, 0, 0.3),
+                inset 0 1px 2px rgba(255, 255, 255, 0.5),
+                inset 0 -1px 2px rgba(0, 0, 0, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .btn-skip svg {
+            width: 14px;
+            height: 14px;
+            fill: #333;
+        }
+
+        /* 录音按钮 */
+        .btn-record {
+            width: 27px;
+            height: 27px;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #d9ceb2 0%, #c8b898 50%, #8a7a64 100%);
+            box-shadow: 
+                0 1px 4px rgba(0, 0, 0, 0.2),
+                inset 0 1px 2px rgba(255, 255, 255, 0.4),
+                inset 0 -1px 2px rgba(0, 0, 0, 0.2);
+            border: 1px solid #8a7a64;
+        }
+
+        .btn-record:hover {
+            box-shadow: 
+                0 2px 6px rgba(0, 0, 0, 0.3),
+                inset 0 1px 2px rgba(255, 255, 255, 0.5),
+                inset 0 -1px 2px rgba(0, 0, 0, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .btn-record.recording {
+            animation: pulse 1s ease-in-out infinite;
+            background: linear-gradient(145deg, #c83c3c 0%, #a83333 50%, #882a2a 100%);
+            border-color: #882a2a;
+        }
+
+        .btn-record svg {
+            width: 14px;
+            height: 14px;
+            fill: #333;
+        }
+
+        /* 音量滑块样式 */
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 80px;
+            height: 2px;
+            border-radius: 1px;
+            background: rgba(255, 255, 255, 0.1);
+            outline: none;
+            transition: all 0.3s ease;
+            vertical-align: middle;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* 移除浏览器默认样式 */
+        input[type="range"]::-webkit-slider-runnable-track {
+            height: 2px;
+            border-radius: 1px;
+        }
+
+        input[type="range"]::-moz-range-track {
+            height: 2px;
+            border-radius: 1px;
+        }
+
+        input[type="range"]:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* 滑块拇指样式 */
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: url('assets/images/icons/volume-icon.png') no-repeat center center;
+            background-size: contain;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: url('assets/images/icons/volume-icon.png') no-repeat center center;
+            background-size: contain;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        input[type="range"]::-moz-range-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        /* 背景透明度滑块样式 */
+        #bgOpacitySlider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 4px;
+            border-radius: 2px;
+            background: linear-gradient(90deg, #8B4513 0%, #D2B48C 100%);
+            outline: none;
+            transition: all 0.3s ease;
+            vertical-align: middle;
+            margin: 10px 0;
+            padding: 0;
+        }
+
+        #bgOpacitySlider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #d9ceb2;
+            border: 2px solid #8B4513;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: -6px;
+        }
+
+        #bgOpacitySlider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            background: #e8e0d0;
+        }
+
+        #bgOpacitySlider::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #d9ceb2;
+            border: 2px solid #8B4513;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        #bgOpacitySlider::-moz-range-thumb:hover {
+            transform: scale(1.2);
+            background: #e8e0d0;
+        }
+
+        @keyframes pulse {
+            0%, 100% { 
+                box-shadow: 
+                    0 1px 4px rgba(200, 60, 60, 0.3),
+                    inset 0 1px 2px rgba(255, 255, 255, 0.4),
+                    inset 0 -1px 2px rgba(0, 0, 0, 0.2);
+            }
+            50% { 
+                box-shadow: 
+                    0 2px 8px rgba(200, 60, 60, 0.5),
+                    inset 0 1px 2px rgba(255, 255, 255, 0.4),
+                    inset 0 -1px 2px rgba(0, 0, 0, 0.2);
+            }
+        }
+
+        .btn-record.recording svg {
+            fill: #fff;
+        }
+
+        .btn-record svg {
+            width: 11px;
+            height: 11px;
+            fill: #333;
+        }
+
+        /* 歌曲信息 */
+        .track-info {
+            width: 100%;
+            max-width: 350px;
+            text-align: center;
+            color: #fff;
+            margin-top: 10px;
+        }
+
+        .track-name {
+            font-size: 18px;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+            color: #d9ceb2;
+            margin-bottom: 5px;
+            letter-spacing: 1px;
+        }
+
+        .track-artist {
+            font-size: 14px;
+            font-weight: normal;
+            font-family: 'Courier New', monospace;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .track-album {
+            font-size: 12px;
+            font-weight: normal;
+            font-family: 'Courier New', monospace;
+            color: #d9ceb2;
+            margin-top: 2px;
+        }
+
+        /* 进度条 */
+        .progress-container {
+            width: 100%;
+            max-width: 350px;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 1px;
+            overflow: visible;
+            margin-top: 10px;
+            position: relative;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #8B4513 0%, #D2B48C 100%);
+            border-radius: 1px;
+            transition: width 0.1s linear;
+        }
+
+        /* 时间显示 */
+        .time-display {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 350px;
+            margin-top: 8px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* 播放速度条 */
+        .speed-container {
+            width: 100%;
+            max-width: 350px;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 1px;
+            overflow: visible;
+            margin-top: 15px;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .speed-bar {
+            height: 100%;
+            width: 100%;
+            /* 与音量条保持一致的配色 */
+            background: linear-gradient(90deg, #8B4513 0%, #D2B48C 100%);
+            border-radius: 1px;
+        }
+
+        .speed-indicator {
+            position: absolute;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 28px;
+            height: 28px;
+            pointer-events: none;
+            background: transparent;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: left 0.1s linear;
+        }
+
+        .speed-indicator img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        /* 歌词显示 */
+        .lyrics-container {
+            width: 100%;
+            max-width: 350px;
+            margin-top: 20px;
+            margin-bottom: 20px;
+            position: relative;
+            padding: 20px 0;
+            height: 120px;
+        }
+
+        /* 添加上下两条平行线 */
+        .lyrics-container::before,
+        .lyrics-container::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent 0%, rgba(217, 206, 178, 0.6) 50%, transparent 100%);
+        }
+
+        .lyrics-container::before {
+            top: 0;
+        }
+
+        .lyrics-container::after {
+            bottom: 0;
+        }
+
+        .lyrics-content {
+            height: 100%;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+
+        .lyrics-line {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 14px;
+            font-weight: normal;
+            font-family: 'Courier New', monospace;
+            line-height: 1.5;
+            letter-spacing: -0.2px;
+            transition: all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            padding: 2px 0;
+            opacity: 0.7;
+            transform: translateY(0);
+            max-width: 98%;
+        }
+
+        .lyrics-line.active {
+            color: #d9ceb2;
+            font-size: 16px;
+            font-weight: bold;
+            opacity: 1;
+            text-shadow: 0 2px 10px rgba(217, 206, 178, 0.3);
+            transform: scale(1.05);
+        }
+
+        .lyrics-line.next {
+            opacity: 0.5;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.7);
+            font-weight: normal;
+            font-family: 'Courier New', monospace;
+        }
+
+        /* 音频元素隐藏 */
+        audio {
+            display: none;
+        }
+
+        /* 提示信息 */
+        .tooltip {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: #d4af37;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+            z-index: 200;
+        }
+
+        .tooltip.show {
+            opacity: 1;
+        }
+
+        /* 响应式 */
+        @media (max-width: 480px) {
+            .cassette-case {
+                width: 320px;
+                height: 200px;
+            }
+
+            .tape-window {
+                width: 240px;
+                height: 85px;
+            }
+
+            .reel-container {
+                width: 39px;
+                height: 39px;
+            }
+
+            .reel-container.left {
+                left: 30px;
+            }
+
+            .reel-container.right {
+                right: 30px;
+            }
+
+            .gear-inner {
+                width: 23px;
+                height: 23px;
+            }
+
+            .controls {
+                padding: 20px 30px;
+                gap: 15px;
+            }
+
+            .btn-play {
+                width: 60px;
+                height: 60px;
+            }
+
+            .btn-skip,
+            .btn-record {
+                width: 45px;
+                height: 45px;
+            }
+
+            .progress-container,
+            .volume-container,
+            .speed-container,
+            .time-display,
+            .lyrics-container {
+                width: 320px;
+            }
+
+            .share-buttons {
+                top: 10px;
+                right: 10px;
+                gap: 8px;
+            }
+
+            .share-btn {
+                width: 38px;
+                height: 38px;
+            }
+
+            .share-btn svg {
+                width: 18px;
+                height: 18px;
+            }
+        }
+
+        /* iPhone 13 屏幕适配 */
+        @media screen and (device-width: 390px) and (device-height: 844px) {
+            /* 适配 iPhone 13 屏幕尺寸 */
+            .cassette-case {
+                width: 350px;
+                height: 218px;
+            }
+
+            .tape-window {
+                width: 262px;
+                height: 94px;
+            }
+
+            .reel-container {
+                width: 42.9px;
+                height: 42.9px;
+            }
+
+            .reel-container.left {
+                left: 35px;
+            }
+
+            .reel-container.right {
+                right: 35px;
+            }
+
+            .gear-inner {
+                width: 25px;
+                height: 25px;
+            }
+
+            .controls {
+                width: 350px;
+                padding: 25px 0;
+                gap: 15px;
+            }
+
+            .btn-play {
+                width: 65px;
+                height: 65px;
+            }
+
+            .btn-skip,
+            .btn-record {
+                width: 48px;
+                height: 48px;
+            }
+
+            .progress-container,
+            .volume-container,
+            .speed-container,
+            .time-display,
+            .lyrics-container {
+                width: 350px;
+            }
+
+            .share-buttons {
+                top: 15px;
+                right: 15px;
+                gap: 10px;
+            }
+
+            .share-btn {
+                width: 42px;
+                height: 42px;
+            }
+
+            .share-btn svg {
+                width: 20px;
+                height: 20px;
+            }
+        }
+
+        /* 竖屏模式优化 */
+        @media screen and (orientation: portrait) {
+            /* 确保在竖屏模式下良好显示 */
+            body {
+                min-height: 100vh;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: flex-start;
+                padding: 20px 10px;
+                box-sizing: border-box;
+            }
+
+            .music-player {
+                max-width: 100%;
+                width: 100%;
+                max-width: 380px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 加载首屏 -->
+    <div id="loading-screen" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #203744; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; padding: 20px;">
+        <!-- iPhone 13 适配尺寸底框 -->
+        <div class="loading-iphone-container" style="width: 100%; max-width: 390px; aspect-ratio: 1170/2532; background: linear-gradient(145deg, #1a3834 0%, #20443e 100%); border-radius: 48px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1); padding: 60px 20px 60px; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+            <!-- 顶部刘海区域 -->
+            <div style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 200px; height: 30px; background: #1a3834; border-bottom-left-radius: 15px; border-bottom-right-radius: 15px; z-index: 20;"></div>
+            
+            <!-- 内容容器 -->
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; width: 100%;">
+                <!-- Logo 区域 -->
+                <div style="flex: 1; display: flex; align-items: center; justify-content: center;">
+                    <div style="width: 120px; height: 120px; position: relative;">
+                        <!-- 圆形轮廓 -->
+                        <div style="width: 100%; height: 100%; border: 3px solid #8B4513; border-radius: 50%; position: absolute; top: 0; left: 0;"></div>
+                        <!-- 电吉他轮廓 -->
+                        <svg width="80" height="80" viewBox="0 0 100 100" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); fill: #d9ceb2;">
+                            <path d="M50 10 L70 30 L80 20 L60 10 L50 10 Z M50 10 L30 30 L20 20 L40 10 L50 10 Z M50 10 L50 40 L30 60 L20 50 L25 80 L30 85 L40 85 L45 80 L50 85 L55 80 L60 85 L70 85 L75 80 L80 50 L70 60 L50 40 Z"/>
+                        </svg>
+                    </div>
+                </div>
+                
+                <!-- 内容区域 -->
+                <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 20px;">
+                    <h1 style="color: #d9ceb2; font-size: 36px; margin-bottom: 20px; font-family: 'Courier New', monospace;">PF-Player</h1>
+                    <p style="color: #d9ceb2; font-size: 18px; margin-bottom: 40px; font-family: 'Courier New', monospace;">Wish You Were Here</p>
+                </div>
+                
+                <!-- 加载条区域 -->
+                <div style="flex: 1; display: flex; align-items: flex-start; justify-content: center; padding-top: 40px;">
+                    <!-- 加载动画条 -->
+                    <div style="width: 200px; height: 4px; background: rgba(217, 206, 178, 0.3); border-radius: 2px; overflow: hidden;">
+                        <div id="loading-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #8B4513 0%, #D2B48C 100%); border-radius: 2px; transition: width 0.3s ease;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- iPhone 13 容器 -->
+    <div class="iphone-container">
+        <!-- 背景装饰 -->
+        <div class="bg-decoration"></div>
+
+        <!-- 分享按钮 -->
+        <div class="share-buttons">
+            <button class="share-btn more-btn" onclick="toggleShareOptions()" title="更多选项">
+                <svg viewBox="0 0 24 24">
+                    <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
+                </svg>
+            </button>
+            
+            <!-- 分享选项面板 -->
+            <div class="share-options" id="shareOptions" style="display: none;">
+                <button class="share-option-btn" onclick="shareTo('weibo')" title="分享到微博">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M10.098 20.323c-3.977.391-7.414-1.406-7.672-4.02-.259-2.609 2.759-5.047 6.74-5.441 3.979-.394 7.413 1.404 7.671 4.018.259 2.6-2.759 5.049-6.739 5.443zM9.05 17.219c-.384.616-1.208.884-1.829.602-.612-.279-.793-.991-.406-1.593.379-.595 1.176-.861 1.793-.601.622.263.82.972.442 1.592zm1.27-1.627c-.141.237-.449.353-.689.253-.236-.09-.313-.361-.177-.586.138-.227.436-.346.672-.24.239.09.315.36.194.573zm.176-2.719c-1.893-.493-4.033.45-4.857 2.118-.836 1.704-.026 3.591 1.886 4.21 1.983.64 4.318-.341 5.132-2.179.8-1.793-.201-3.642-2.161-4.149zm7.563-1.224c-.346-.105-.579-.18-.405-.649.381-1.025.421-1.905.001-2.535-.789-1.181-2.924-1.109-5.382-.031 0 0-.768.334-.571-.271.381-1.217.324-2.229-.27-2.817-1.344-1.332-4.918.045-7.99 3.073C1.87 10.963.917 13.511.917 15.614c0 4.042 5.172 6.505 10.229 6.505 6.61 0 11.006-3.86 11.006-6.912 0-1.848-1.566-2.898-2.993-3.558zm.636-3.931c-.164-.391-.549-.596-.914-.596-.104 0-.211.016-.318.051l-1.081.353c-.391.127-.603.541-.475.932.127.391.541.603.932.475l1.081-.353c.391-.127.603-.541.475-.932zm2.082-1.229c-.457-1.084-1.524-1.659-2.537-1.659-.291 0-.586.045-.873.139l-1.081.353c-.521.17-.805.732-.635 1.253.17.521.732.805 1.253.635l1.081-.353c.286-.093.594.019.753.396.159.377.067.793-.219.886l-1.081.353c-.521.17-.805.732-.635 1.253.17.521.732.805 1.253.635l1.081-.353c1.014-.331 1.589-1.397 1.429-2.482-.033-.224-.096-.437-.18-.641z"/>
+                    </svg>
+                    <span>微博</span>
+                </button>
+                <button class="share-option-btn" onclick="shareTo('wechat')" title="分享到微信">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                    </svg>
+                    <span>微信</span>
+                </button>
+                <button class="share-option-btn" onclick="shareTo('qq')" title="分享到QQ">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+                    </svg>
+                    <span>QQ</span>
+                </button>
+                <button class="share-option-btn" onclick="shareTo('instagram')" title="分享到Instagram">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M7.8 2h8.4C19.4 2 22 4.6 22 7.8v8.4a5.8 5.8 0 0 1-5.8 5.8H7.8C4.6 22 2 19.4 2 16.2V7.8A5.8 5.8 0 0 1 7.8 2m-.2 2A3.6 3.6 0 0 0 4 7.6v8.8C4 18.39 5.61 20 7.6 20h8.8a3.6 3.6 0 0 0 3.6-3.6V7.6C20 5.61 18.39 4 16.4 4H7.6m9.65 1.5a1.25 1.25 0 0 1 1.25 1.25A1.25 1.25 0 0 1 17.25 8A1.25 1.25 0 0 1 16 6.75a1.25 1.25 0 0 1 1.25-1.25M12 7a5 5 0 0 1 5 5a5 5 0 0 1-5 5a5 5 0 0 1-5-5a5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3a3 3 0 0 0 3 3a3 3 0 0 0 3-3a3 3 0 0 0-3-3z"/>
+                    </svg>
+                    <span>Instagram</span>
+                </button>
+                <button class="share-option-btn" onclick="copyShareLink()" title="复制分享链接">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+                    </svg>
+                    <span>复制链接</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 主播放器容器 -->
+        <div class="player-container">
+            <!-- 滑动容器 -->
+            <div class="slide-container" id="slideContainer">
+                <!-- 第一页：播放界面 -->
+                <div class="slide-page page-1">
+                    <div class="cassette-case">
+                        <div class="cassette">
+                            <!-- 螺丝 -->
+                            <div class="screw top-left"></div>
+                            <div class="screw top-right"></div>
+                            <div class="screw bottom-left"></div>
+                            <div class="screw bottom-right"></div>
+
+                            <!-- 标签区域 -->
+                            <div class="label-area" onclick="toggleSide()">
+                                <div class="retro-label">
+                                    <!-- 磁带计数器 -->
+                                    <div class="tape-counter">
+                                        <div class="counter-text">当前播放：<span id="currentSideDisplay">A-Side</span> 第<span id="currentTrackDisplay">01</span>首 / <span id="totalTracksDisplay">06</span>首</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 磁带窗口 -->
+                            <div class="tape-window">
+                                <!-- 磁带条 -->
+                                <div class="tape-strip"></div>
+                                
+                                <!-- 左齿轮 -->
+                                <div class="reel-container left">
+                                    <div class="gear" id="leftGear">
+                                        <div class="gear-outer"></div>
+                                        <div class="gear-inner"></div>
+                                        <div class="gear-center"></div>
+                                    </div>
+                                </div>
+
+                                <!-- 右齿轮 -->
+                                <div class="reel-container right">
+                                    <div class="gear" id="rightGear">
+                                        <div class="gear-outer"></div>
+                                        <div class="gear-inner"></div>
+                                        <div class="gear-center"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 底部孔洞 -->
+                            <div class="bottom-holes">
+                                <div class="hole"></div>
+                                <div class="hole"></div>
+                                <div class="center-hole"></div>
+                                <div class="hole"></div>
+                                <div class="hole"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 第二页：专辑封面 -->
+                <div class="slide-page page-2">
+                    <div class="cassette-case">
+                        <div class="album-cover-container" id="albumCoverContainer">
+                            <img class="album-cover" id="albumCover" src="" alt="专辑封面">
+                        </div>
+                    </div>
+                </div>
+
+
+            </div>
+
+            <!-- 歌曲信息 -->
+            <div class="track-info">
+                <div class="track-name" id="trackName">加载中...</div>
+                <div class="track-artist" id="trackArtist"></div>
+                <div class="track-album" id="trackAlbum"></div>
+            </div>
+
+            <!-- 歌词显示 -->
+            <div class="lyrics-container">
+                <div class="lyrics-content" id="lyricsContent">
+                    <div class="lyrics-line">点击播放开始显示歌词</div>
+                </div>
+            </div>
+
+            <!-- 时间显示 -->
+            <div class="time-display">
+                <span id="currentTime">0:00</span>
+                <span id="totalTime">6:53</span>
+            </div>
+
+            <!-- 进度条 -->
+        <div class="progress-container" id="progressContainer" style="width: 100%; max-width: 350px; height: 2px; background: rgba(255, 255, 255, 0.1); border-radius: 1px; overflow: visible; margin-top: 8px; position: relative; cursor: pointer;">
+            <div class="progress-bar" id="progressBar" style="height: 100%; width: 0%; background: linear-gradient(90deg, #8B4513 0%, #D2B48C 100%); border-radius: 1px; transition: width 0.1s linear;"></div>
+            <!-- 电吉他进度指示器 -->
+            <div class="progress-indicator" id="progressIndicator" style="position: absolute; top: 50%; transform: translate(-50%, -50%); width: 28px; height: 28px; pointer-events: none; background: transparent; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                <img src="assets/images/icons/progress-icon.png" alt="吉他" style="width: 100%; height: 100%; object-fit: contain;"/>
+            </div>
+        </div>
+        
+        <!-- 音量控制 -->
+        <div class="volume-container" style="width: 100%; max-width: 350px; height: 2px; background: rgba(255, 255, 255, 0.1); border-radius: 1px; overflow: visible; margin-top: 15px; position: relative; cursor: pointer;">
+            <div class="volume-bar" id="volumeBar" style="height: 100%; width: 70%; background: linear-gradient(90deg, #8B4513 0%, #D2B48C 100%); border-radius: 1px; transition: width 0.1s linear;"></div>
+            <!-- 音量滑块 -->
+            <div class="volume-indicator" id="volumeIndicator" style="position: absolute; top: 50%; left: 70%; transform: translate(-50%, -50%); width: 30px; height: 30px; pointer-events: none; background: transparent; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                <img src="assets/images/icons/volume-icon.png" alt="音量" style="width: 100%; height: 100%; object-fit: contain;"/>
+            </div>
+            <!-- 隐藏的输入控件 -->
+            <input type="range" id="volumeSlider" min="0" max="100" value="70" step="1" oninput="updateVolume(this.value)" title="音量滑块" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer;"/>
+        </div>
+
+        <!-- 播放速度控制 -->
+        <div class="speed-container" style="width: 100%; max-width: 350px; height: 2px; background: rgba(255, 255, 255, 0.1); border-radius: 1px; overflow: visible; margin-top: 15px; position: relative; cursor: pointer;">
+            <!-- 播放速度条 -->
+            <div class="speed-bar" id="speedBar" style="height: 100%; width: 100%; background: linear-gradient(90deg, #8B4513 0%, #D2B48C 100%); border-radius: 1px;"></div>
+            <!-- 播放速度滑块 -->
+            <div class="speed-indicator" id="speedIndicator" style="position: absolute; top: 50%; left: 40%; transform: translate(-50%, -50%); width: 28px; height: 28px; pointer-events: none; background: transparent; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                <img src="assets/images/icons/speed-icon.png" alt="速度" style="width: 100%; height: 100%; object-fit: contain;"/>
+            </div>
+            <!-- 隐藏的输入控件 -->
+            <input type="range" id="speedSlider" min="0" max="100" value="40" step="1" oninput="updateSpeed(this.value)" title="速度滑块" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer;"/>
+        </div>
+
+            <!-- 控制按钮 -->
+            <div class="controls">
+                <!-- 背景设置 -->
+                <button class="control-btn btn-skip" id="bgSettingsBtn" onclick="toggleBgSettings()" title="播放器底色">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+                    </svg>
+                </button>
+
+                <!-- 播放模式 -->
+                <button class="control-btn btn-skip" id="playModeBtn" onclick="togglePlayMode()" title="播放模式">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/>
+                    </svg>
+                </button>
+
+                <!-- 上一首 -->
+                <button class="control-btn btn-skip" onclick="playPrevious()" title="上一首">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M6 6h2v12H6zm3.5 6l8.5 6V6l-8.5 6z"/>
+                    </svg>
+                </button>
+
+                <!-- 播放/暂停 -->
+                <button class="control-btn btn-play" id="playBtn" onclick="togglePlay()" title="播放/暂停">
+                    <svg id="playIcon" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z"/>
+                    </svg>
+                    <svg id="pauseIcon" viewBox="0 0 24 24" style="display: none;">
+                        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+                    </svg>
+                </button>
+
+                <!-- 下一首 -->
+                <button class="control-btn btn-skip" onclick="playNext()" title="下一首">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>
+                    </svg>
+                </button>
+
+                <!-- 录音 -->
+                <button class="control-btn btn-record" id="recordBtn" onclick="toggleRecord()" title="录音">
+                    <svg viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="6"/>
+                    </svg>
+                </button>
+
+                <!-- 播放列表 -->
+                <button class="control-btn btn-skip" id="playlistBtn" onclick="togglePlaylist()" title="播放列表">
+                    <svg viewBox="0 0 24 24" width="14" height="14">
+                        <rect x="3" y="5" width="18" height="2" fill="#333"/>
+                        <rect x="3" y="11" width="18" height="2" fill="#333"/>
+                        <rect x="3" y="17" width="18" height="2" fill="#333"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- 音频元素 -->
+        <audio id="audioPlayer" preload="metadata">
+            <!-- 使用示例音频URL，实际使用时替换为真实音乐文件 -->
+            <source src="http://music.163.com/song/media/outer/url?id=4235817.mp3" type="audio/mpeg">
+         </audio>
+
+        <!-- 提示信息 -->
+        <div class="tooltip" id="tooltip"></div>
+
+        <!-- 播放列表容器 -->
+        <div class="playlist-container" id="playlistContainer" style="position: absolute; bottom: 0; left: 20px; right: 20px; background: rgba(10, 40, 40, 0.9); border-radius: 15px 15px 0 0; max-height: 0; overflow: hidden; transition: max-height 0.3s ease; z-index: 50;">
+            <div class="playlist-header" style="padding: 15px; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h3 style="color: #d9ceb2; font-size: 16px; margin: 0;">播放列表</h3>
+                    <button class="close-btn" onclick="togglePlaylist()" style="background: none; border: none; color: #d9ceb2; cursor: pointer;">×</button>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" id="searchInput" placeholder="搜索歌曲..." style="flex: 1; padding: 8px 12px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 4px; color: #d9ceb2; font-size: 12px;">
+                    <button onclick="searchSongs()" style="padding: 8px 12px; background: linear-gradient(145deg, #8B4513 0%, #D2B48C 100%); color: #e8e0d0; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">搜索</button>
+                </div>
+            </div>
+            <div class="playlist-content" id="playlistContent" style="max-height: 300px; overflow-y: auto; padding: 10px 0;"></div>
+        </div>
+
+        <!-- 背景设置容器 -->
+        <div class="bg-settings-container" id="bgSettingsContainer" style="position: absolute; bottom: 0; left: 20px; right: 20px; background: rgba(10, 40, 40, 0.9); border-radius: 15px 15px 0 0; max-height: 0; overflow: hidden; overflow-y: auto; transition: max-height 0.5s ease; z-index: 50;">
+            <div class="bg-settings-header" style="padding: 12px 15px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="color: #d9ceb2; font-size: 14px; margin: 0; font-family: 'Source Han Sans CN Light', sans-serif;">播放器底色</h3>
+                <button class="close-btn" onclick="toggleBgSettings()" style="background: none; border: none; color: #d9ceb2; cursor: pointer; font-size: 16px;">×</button>
+            </div>
+            <div class="bg-settings-content" style="padding: 15px;">
+                <!-- 磁带盒风格设置 -->
+                <div class="bg-setting-item" style="margin-bottom: 15px;">
+                    <h4 style="color: #d9ceb2; font-size: 14px; margin: 0 0 10px 0;">磁带盒风格</h4>
+                    
+                    <!-- 磁带盒配色 -->
+                    <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
+                        <div style="flex: 1; min-width: 100px;">
+                            <label style="display: block; color: #d9ceb2; margin-bottom: 4px; font-size: 11px; font-family: 'Source Han Sans CN Light', sans-serif;">磁带盒背景色:</label>
+                            <input type="color" id="cassetteBgColor" value="#e8e0d0" onchange="updateCassetteStyle()" style="width: 100%; height: 30px; border: none; border-radius: 4px; cursor: pointer;">
+                        </div>
+                        <div style="flex: 1; min-width: 100px;">
+                            <label style="display: block; color: #d9ceb2; margin-bottom: 4px; font-size: 11px; font-family: 'Source Han Sans CN Light', sans-serif;">贴纸配色:</label>
+                            <input type="color" id="stickerColor" value="#8B4513" onchange="updateCassetteStyle()" style="width: 100%; height: 30px; border: none; border-radius: 4px; cursor: pointer;">
+                        </div>
+                        <div style="flex: 1; min-width: 100px;">
+                            <label style="display: block; color: #d9ceb2; margin-bottom: 4px; font-size: 11px; font-family: 'Source Han Sans CN Light', sans-serif;">网格条纹颜色:</label>
+                            <input type="color" id="gridColor" value="#e8e0d0" onchange="updateCassetteStyle()" style="width: 100%; height: 30px; border: none; border-radius: 4px; cursor: pointer;">
+                        </div>
+                    </div>
+                    
+
+                    
+                    <!-- 纹理样式 -->
+                    <div style="margin-bottom: 12px;">
+                        <label style="display: block; color: #d9ceb2; margin-bottom: 6px; font-size: 11px; font-family: 'Source Han Sans CN Light', sans-serif;">纹理样式:</label>
+                        <select id="textureStyle" onchange="updateCassetteStyle()" style="width: 100%; padding: 6px; background: rgba(255, 255, 255, 0.1); color: #d9ceb2; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 4px; font-size: 11px;">
+                            <option value="grid">网格</option>
+                            <option value="diamond">菱形</option>
+                            <option value="heart">爱心形</option>
+                            <option value="dots">波点</option>
+                        </select>
+                    </div>
+                    
+                </div>
+                
+                <!-- 界面背景风格设置 -->
+                <div class="bg-setting-item" style="margin-bottom: 15px; border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 15px;">
+                    <h4 style="color: #d9ceb2; font-size: 14px; margin: 0 0 10px 0;">界面背景风格</h4>
+                    
+                    <!-- 背景颜色选择 -->
+                    <div style="margin-bottom: 12px;">
+                        <label style="display: block; color: #d9ceb2; margin-bottom: 6px; font-size: 11px; font-family: 'Source Han Sans CN Light', sans-serif;">背景颜色:</label>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <input type="color" id="bgColorPicker" value="#1a3834" onchange="applyBgColor()" style="width: 50px; height: 35px; border: none; border-radius: 4px; cursor: pointer;">
+                            <button onclick="applyBgColor()" style="background: linear-gradient(145deg, #d9ceb2 0%, #c4b998 100%); color: #1a2d38; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 11px; font-family: 'Source Han Sans CN Light', sans-serif;">应用颜色</button>
+                        </div>
+                    </div>
+                    
+                    <!-- 背景图片上传 -->
+                    <div style="margin-bottom: 12px;">
+                        <label style="display: block; color: #d9ceb2; margin-bottom: 6px; font-size: 11px; font-family: 'Source Han Sans CN Light', sans-serif;">上传背景图片:</label>
+                        <input type="file" id="bgImageUpload" accept="image/*" onchange="handleBgImageUpload(event)" style="color: #d9ceb2; padding: 4px; font-size: 11px; font-family: 'Source Han Sans CN Light', sans-serif;">
+                    </div>
+                    
+                    <!-- 图片透明度调节 -->
+                    <div style="margin-bottom: 12px;">
+                        <label style="display: flex; justify-content: space-between; color: #d9ceb2; margin-bottom: 6px; font-size: 11px; font-family: 'Source Han Sans CN Light', sans-serif;">图片透明度: <span id="opacityValue">50%</span></label>
+                        <div style="display: flex; align-items: center; width: 100%;">
+                            <input type="range" id="bgOpacitySlider" min="0" max="100" value="50" oninput="updateBgOpacity()" style="width: 100%; height: 4px; background: linear-gradient(90deg, #8B4513 0%, #D2B48C 100%); border-radius: 2px; margin: 10px 0;">
+                        </div>
+                    </div>
+                    
+                    <!-- 毛玻璃效果 -->
+                    <div style="margin-bottom: 12px;">
+                        <label style="display: flex; justify-content: space-between; align-items: center; color: #d9ceb2; margin-bottom: 6px; font-size: 11px; font-family: 'Source Han Sans CN Light', sans-serif;">
+                            <span>毛玻璃效果:</span>
+                            <label class="switch">
+                                <input type="checkbox" id="glassEffectToggle" onchange="toggleGlassEffect()">
+                                <span class="slider"></span>
+                                <span class="knob"></span>
+                            </label>
+                        </label>
+                        <style>
+                            .switch {
+                                position: relative;
+                                display: inline-block;
+                                width: 40px;
+                                height: 20px;
+                            }
+                            .switch input {
+                                opacity: 0;
+                                width: 0;
+                                height: 0;
+                            }
+                            .switch .slider {
+                                position: absolute;
+                                cursor: pointer;
+                                top: 0;
+                                left: 0;
+                                right: 0;
+                                bottom: 0;
+                                background-color: rgba(255, 255, 255, 0.2);
+                                transition: .4s;
+                                border-radius: 20px;
+                            }
+                            .switch .knob {
+                                position: absolute;
+                                content: '';
+                                height: 14px;
+                                width: 14px;
+                                left: 3px;
+                                bottom: 3px;
+                                background-color: #d9ceb2;
+                                transition: .4s;
+                                border-radius: 50%;
+                            }
+                            .switch input:checked + .slider {
+                                background-color: rgba(255, 255, 255, 0.5);
+                            }
+                            .switch input:checked + .slider + .knob {
+                                transform: translateX(20px);
+                            }
+                        </style>
+                    </div>
+
+                </div>
+                
+                <!-- 重置按钮 -->
+                <div class="bg-setting-item" style="margin-top: 20px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                    <button onclick="resetBackground()" style="background: linear-gradient(145deg, #8B4513 0%, #D2B48C 100%); color: #e8e0d0; border: none; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 11px; font-family: 'Source Han Sans CN Light', sans-serif; height: auto;">重置背景</button>
+                    <button onclick="resetCassetteStyle()" style="background: linear-gradient(145deg, #e8e0d0 0%, #d9ceb2 100%); color: #8B4513; border: none; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 11px; font-family: 'Source Han Sans CN Light', sans-serif; height: auto;">重置磁带盒风格</button>
+                    <button onclick="saveUserSettings()" style="background: linear-gradient(145deg, #2a4d69 0%, #4a6d89 100%); color: #e8e0d0; border: none; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 11px; font-family: 'Source Han Sans CN Light', sans-serif; height: auto;">保存设置</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入外部JavaScript文件 -->
+    <script src="js/player.js"></script>
+</body>
+</html>

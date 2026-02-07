@@ -1,0 +1,39 @@
+{
+  "name": "PF-Player",
+  "short_name": "PF-Player",
+  "description": "复古磁带风格的音乐播放器",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#1a3834",
+  "theme_color": "#8B4513",
+  "icons": [
+    {
+      "src": "assets/images/icons/volume-icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/images/icons/volume-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "orientation": "portrait",
+  "categories": ["entertainment", "music", "audio"],
+  "lang": "zh-CN",
+  "dir": "ltr",
+  "prefer_related_applications": false,
+  "related_applications": [],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "播放音乐",
+      "short_name": "播放",
+      "description": "开始播放音乐",
+      "url": "./index.html?action=play",
+      "icons": [{ "src": "assets/images/icons/volume-icon.png", "sizes": "192x192" }]
+    }
+  ]
+}
