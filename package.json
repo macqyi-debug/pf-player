@@ -1,0 +1,13 @@
+{
+  "name": "pf-player",
+  "version": "1.0.0",
+  "description": "复古磁带风格的音乐播放器",
+  "main": "index.html",
+  "scripts": {
+    "dev": "python3 -m http.server 8000",
+    "deploy": "vercel --prod"
+  },
+  "keywords": ["music", "player", "retro", "tape"],
+  "author": "",
+  "license": "MIT"
+}
