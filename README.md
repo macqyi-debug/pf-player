@@ -83,5 +83,6 @@ MIT
 
 ## 作者
 
-- 开发者：[Your Name]
+- 开发者：Matisse Ma
 - 项目灵感：Pink Floyd - Wish You Were Here
+# pf-player
