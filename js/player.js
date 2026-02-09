@@ -553,6 +553,12 @@ function bindEventListeners() {
         slideContainer.addEventListener('mouseup', handleTouchEnd);
         slideContainer.addEventListener('mouseleave', handleTouchEnd);
     }
+    
+    // 磁带盒点击翻面事件
+    const cassette = document.querySelector('.cassette');
+    if (cassette) {
+        cassette.addEventListener('click', toggleSide);
+    }
 
     // 全局鼠标/触摸移动事件
     document.addEventListener('mousemove', handleDragMove);
@@ -1448,7 +1454,7 @@ function toggleSide() {
     try {
         // 获取磁带齿轮元素
         const leftGear = document.getElementById('leftGear');
-        const rightGear = document.querySelector('.reel-container.right .gear');
+        const rightGear = document.getElementById('rightGear');
         
         // 添加快速旋转动画
         if (leftGear && rightGear) {
@@ -2373,28 +2379,58 @@ function addSong() {
 
 // 加载动画
 function initLoadingScreen() {
+    console.log('Initializing loading screen');
     const loadingScreen = document.getElementById('loading-screen');
     const loadingBar = document.getElementById('loading-bar');
     
-    if (!loadingScreen || !loadingBar) return;
+    console.log('Loading screen elements:', { loadingScreen, loadingBar });
+    
+    if (!loadingScreen || !loadingBar) {
+        console.error('Loading screen elements not found');
+        return;
+    }
     
     let progress = 0;
     const interval = setInterval(() => {
         progress += 5;
         if (progress <= 100) {
             loadingBar.style.width = `${progress}%`;
+            console.log('Loading progress:', progress);
         } else {
             clearInterval(interval);
+            console.log('Loading complete, hiding screen');
             // 加载完成，隐藏首屏
             setTimeout(() => {
-                loadingScreen.style.opacity = '0';
-                loadingScreen.style.transition = 'opacity 0.5s ease';
-                setTimeout(() => {
-                    loadingScreen.style.display = 'none';
-                }, 500);
+                if (loadingScreen) {
+                    loadingScreen.style.opacity = '0';
+                    loadingScreen.style.transition = 'opacity 0.5s ease';
+                    console.log('Setting loading screen opacity to 0');
+                    setTimeout(() => {
+                        if (loadingScreen) {
+                            loadingScreen.style.display = 'none';
+                            console.log('Setting loading screen display to none');
+                        }
+                    }, 500);
+                }
             }, 500);
         }
     }, 100);
+}
+
+// 强制隐藏加载屏幕的函数，作为备用方案
+function forceHideLoadingScreen() {
+    console.log('Forcing hide loading screen');
+    const loadingScreen = document.getElementById('loading-screen');
+    if (loadingScreen) {
+        loadingScreen.style.opacity = '0';
+        loadingScreen.style.transition = 'opacity 0.5s ease';
+        setTimeout(() => {
+            if (loadingScreen) {
+                loadingScreen.style.display = 'none';
+                console.log('Forced loading screen hidden');
+            }
+        }, 500);
+    }
 }
 
 // 本地存储功能
@@ -2640,6 +2676,7 @@ function getPerformanceReport() {
 // 页面加载完成后初始化
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
+        console.log('DOMContentLoaded event fired');
         // 初始化性能监控
         initPerformanceMonitoring();
         
@@ -2649,12 +2686,21 @@ if (document.readyState === 'loading') {
         initLoadingScreen();
         // 等待加载动画完成并完全隐藏后，再加载用户设置和初始化播放器
         setTimeout(() => {
+            // 强制隐藏加载屏幕作为安全保障
+            forceHideLoadingScreen();
             // 加载用户设置
             loadUserSettings();
             initPlayer();
         }, 3500); // 等待加载动画完成（2500ms）+ 淡出动画（500ms）+ 完全隐藏（500ms）
+        
+        // 添加额外的安全保障，确保加载屏幕在5秒后一定被隐藏
+        setTimeout(() => {
+            console.log('Final safety check: forcing hide loading screen');
+            forceHideLoadingScreen();
+        }, 5000);
     });
 } else {
+    console.log('DOM already loaded');
     // 初始化性能监控
     initPerformanceMonitoring();
     
@@ -2664,8 +2710,16 @@ if (document.readyState === 'loading') {
     initLoadingScreen();
     // 等待加载动画完成并完全隐藏后，再加载用户设置和初始化播放器
     setTimeout(() => {
+        // 强制隐藏加载屏幕作为安全保障
+        forceHideLoadingScreen();
         // 加载用户设置
         loadUserSettings();
         initPlayer();
     }, 3500); // 等待加载动画完成（2500ms）+ 淡出动画（500ms）+ 完全隐藏（500ms）
+    
+    // 添加额外的安全保障，确保加载屏幕在5秒后一定被隐藏
+    setTimeout(() => {
+        console.log('Final safety check: forcing hide loading screen');
+        forceHideLoadingScreen();
+    }, 5000);
 }
