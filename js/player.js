@@ -1,5 +1,29 @@
 // 音乐播放器核心逻辑
 
+// ============================================
+// 日志控制模块
+// ============================================
+const Logger = {
+    isDebug: false, // 设置为 true 启用调试日志，false 禁用
+    debug(...args) {
+        if (this.isDebug) {
+            console.log('[DEBUG]', ...args);
+        }
+    },
+    info(...args) {
+        if (this.isDebug) {
+            console.log('[INFO]', ...args);
+        }
+    },
+    warn(...args) {
+        console.warn('[WARN]', ...args);
+    },
+    error(...args) {
+        console.error('[ERROR]', ...args);
+    }
+};
+// ============================================
+
 // 全局变量
 let audio;
 let playBtn;
@@ -30,8 +54,61 @@ let currentSongIndex = 0;
 let currentSide = 'A'; // 当前磁带面
 let playMode = 'repeat'; // 播放模式：repeat(列表循环), repeat_one(单曲循环), shuffle(随机播放)
 let audioCache = {}; // 音频缓存
+let audioCacheOrder = []; // 缓存访问顺序（用于 LRU）
 let isLoading = false; // 加载状态
 let volume = 0.7; // 默认音量
+const MAX_AUDIO_CACHE_SIZE = 10; // 最大缓存歌曲数量
+
+// 音频缓存管理器 - 防止缓存无限增长
+const audioCacheManager = {
+    // 添加缓存
+    add(songId, audioElement) {
+        // 如果缓存已满，删除最旧的缓存
+        if (audioCacheOrder.length >= MAX_AUDIO_CACHE_SIZE) {
+            const oldestId = audioCacheOrder.shift(); // 获取最旧的
+            if (audioCache[oldestId]) {
+                console.log(`清理过期缓存: ${oldestId}`);
+                delete audioCache[oldestId];
+            }
+        }
+        
+        // 添加到缓存
+        audioCache[songId] = audioElement;
+        audioCacheOrder.push(songId);
+    },
+    
+    // 检查是否存在
+    has(songId) {
+        return !!audioCache[songId];
+    },
+    
+    // 获取缓存
+    get(songId) {
+        return audioCache[songId];
+    },
+    
+    // 删除缓存
+    remove(songId) {
+        if (audioCache[songId]) {
+            delete audioCache[songId];
+            const index = audioCacheOrder.indexOf(songId);
+            if (index > -1) {
+                audioCacheOrder.splice(index, 1);
+            }
+        }
+    },
+    
+    // 清空所有缓存
+    clear() {
+        audioCache = {};
+        audioCacheOrder = [];
+    },
+    
+    // 获取缓存大小
+    size() {
+        return audioCacheOrder.length;
+    }
+};
 
 // 机械音效
 let mechanicalSound;
@@ -517,7 +594,7 @@ function initPlayer() {
             }, 500);
         }, 300);
     } catch (error) {
-        console.error('初始化播放器失败:', error);
+        Logger.error('初始化播放器失败:', error);
         showTooltip('播放器初始化失败，请刷新页面重试');
     }
 }
@@ -554,11 +631,7 @@ function bindEventListeners() {
         slideContainer.addEventListener('mouseleave', handleTouchEnd);
     }
     
-    // 磁带盒点击翻面事件
-    const cassette = document.querySelector('.cassette');
-    if (cassette) {
-        cassette.addEventListener('click', toggleSide);
-    }
+    // 磁带盒点击翻面事件 - 已在HTML中通过onclick绑定，此处不再重复绑定
 
     // 全局鼠标/触摸移动事件
     document.addEventListener('mousemove', handleDragMove);
@@ -619,12 +692,12 @@ function togglePlay() {
                 leftGear.classList.add('spinning');
                 rightGear.classList.add('spinning');
             }).catch(err => {
-                console.error('播放失败:', err);
+                Logger.error('播放失败:', err);
                 showTooltip('音频加载失败，请检查网络连接');
             });
         }
     } catch (error) {
-        console.error('播放/暂停操作失败:', error);
+        Logger.error('播放/暂停操作失败:', error);
         showTooltip('操作失败，请重试');
     }
 }
@@ -834,7 +907,7 @@ function handlePlaybackEnded() {
         // 自动播放下一首
         playNext();
     } catch (error) {
-        console.error('处理播放结束失败:', error);
+        Logger.error('处理播放结束失败:', error);
     }
 }
 
@@ -2296,9 +2369,9 @@ function playSong(index) {
             }
             
             // 检查是否有缓存的音频
-            if (audioCache[song.id]) {
+            if (audioCacheManager.has(song.id)) {
                 // 使用缓存的音频
-                audio.src = audioCache[song.id].src;
+                audio.src = audioCacheManager.get(song.id).src;
                 playAudio(song);
             } else {
                 // 创建新的音频对象并缓存
@@ -2306,8 +2379,8 @@ function playSong(index) {
                 audioElement.preload = 'auto';
                 
                 audioElement.addEventListener('loadedmetadata', () => {
-                    // 缓存音频
-                    audioCache[song.id] = audioElement;
+                    // 使用缓存管理器添加音频
+                    audioCacheManager.add(song.id, audioElement);
                     audio.src = song.url;
                     playAudio(song);
                 });
@@ -2376,7 +2449,7 @@ function preloadNextSong(currentPlaylist, currentIndex) {
             case 'shuffle':
                 // 随机播放模式，随机选择一首未缓存的歌曲
                 const unCachedSongs = currentPlaylist.filter((song, index) => 
-                    index !== currentIndex && !audioCache[song.id]
+                    index !== currentIndex && !audioCacheManager.has(song.id)
                 );
                 if (unCachedSongs.length > 0) {
                     const randomSong = unCachedSongs[Math.floor(Math.random() * unCachedSongs.length)];
@@ -2391,7 +2464,7 @@ function preloadNextSong(currentPlaylist, currentIndex) {
                 // 列表循环模式，预加载下一首
                 nextIndex = (currentIndex + 1) % currentPlaylist.length;
                 const nextSong = currentPlaylist[nextIndex];
-                if (nextSong && !audioCache[nextSong.id]) {
+                if (nextSong && !audioCacheManager.has(nextSong.id)) {
                     preloadSong(nextSong);
                 }
                 break;
@@ -2404,11 +2477,11 @@ function preloadNextSong(currentPlaylist, currentIndex) {
 // 预加载指定歌曲
 function preloadSong(song) {
     try {
-        if (!audioCache[song.id]) {
+        if (!audioCacheManager.has(song.id)) {
             const audioElement = new Audio(song.url);
             audioElement.preload = 'metadata';
             audioElement.addEventListener('loadedmetadata', () => {
-                audioCache[song.id] = audioElement;
+                audioCacheManager.add(song.id, audioElement);
                 console.log(`预加载完成: ${song.name}`);
             });
             audioElement.addEventListener('error', () => {
@@ -2427,6 +2500,12 @@ function toggleSide() {
         // 获取磁带齿轮元素
         const leftGear = document.getElementById('leftGear');
         const rightGear = document.getElementById('rightGear');
+        const flipTooltip = document.getElementById('flipTooltip');
+        
+        // 显示翻面提示框
+        if (flipTooltip) {
+            flipTooltip.classList.add('show');
+        }
         
         // 添加快速旋转动画
         if (leftGear && rightGear) {
@@ -2487,6 +2566,11 @@ function toggleSide() {
                     labelArea.style.pointerEvents = 'auto';
                 }
                 
+                // 隐藏翻面提示框
+                if (flipTooltip) {
+                    flipTooltip.classList.remove('show');
+                }
+                
                 showTooltip(`已切换到 ${currentSide}-Side`);
             }, 1000); // 1秒动画时间
         } else {
@@ -2500,11 +2584,22 @@ function toggleSide() {
             currentSongIndex = 0;
             playSong(0);
             
+            // 隐藏翻面提示框
+            if (flipTooltip) {
+                flipTooltip.classList.remove('show');
+            }
+            
             showTooltip(`已切换到 ${currentSide}-Side`);
         }
     } catch (error) {
         console.error('切换磁带面失败:', error);
         showTooltip('切换失败，请重试');
+        
+        // 隐藏翻面提示框
+        const flipTooltip = document.getElementById('flipTooltip');
+        if (flipTooltip) {
+            flipTooltip.classList.remove('show');
+        }
     }
 }
 
@@ -3140,13 +3235,13 @@ function resetBackground() {
     
     if (iphoneContainer) {
         // 重置为默认背景
-        iphoneContainer.style.background = 'linear-gradient(145deg, #1a3834 0%, #20443e 100%) !important';
+        iphoneContainer.style.background = '#1f6156 !important';
         iphoneContainer.style.backdropFilter = 'none';
         iphoneContainer.style.backgroundColor = 'transparent';
     }
     
     if (bgColorPicker) {
-        bgColorPicker.value = '#1a3834';
+        bgColorPicker.value = '#1f6156';
     }
     
     if (bgOpacitySlider) {
@@ -3187,10 +3282,8 @@ function toggleGlassEffect() {
                 const opacity = (settings.bgOpacity || '50') / 100;
                 iphoneContainer.style.background = `url(${settings.bgImageUrl}) center/cover no-repeat rgba(0,0,0,${opacity}) !important`;
             } else {
-                const color = settings.bgColor || '#1a3834';
-                const lightColor = adjustColorBrightness(color, 10);
-                const darkColor = adjustColorBrightness(color, -10);
-                iphoneContainer.style.background = `linear-gradient(145deg, ${lightColor} 0%, ${darkColor} 100%) !important`;
+                const color = settings.bgColor || '#1f6156';
+                iphoneContainer.style.background = `${color} !important`;
             }
             showTooltip('毛玻璃效果已禁用');
         }
@@ -3211,7 +3304,7 @@ function resetCassetteStyle() {
     const gridThicknessValue = document.getElementById('gridThicknessValue');
     
     if (cassetteBgColor) cassetteBgColor.value = '#e8e0d0';
-    if (stickerColor) stickerColor.value = '#8B4513';
+    if (stickerColor) stickerColor.value = '#785b3a';
     if (gridColor) gridColor.value = '#e8e0d0';
     if (textureStyle) textureStyle.value = 'grid';
     if (gridThickness) gridThickness.value = 1;
@@ -3226,7 +3319,7 @@ function resetCassetteStyle() {
     }
     
     if (retroLabel) {
-        retroLabel.style.background = 'linear-gradient(180deg, #8B4513 0%, #8B4513 100%)';
+        retroLabel.style.background = 'linear-gradient(180deg, #785b3a 0%, #785b3a 100%)';
     }
     
     // 移除自定义样式
@@ -3424,12 +3517,12 @@ function saveUserSettings() {
     }
     
     const settings = {
-        bgColor: document.getElementById('bgColorPicker')?.value || '#1a3834',
+        bgColor: document.getElementById('bgColorPicker')?.value || '#1f6156',
         bgImageUrl: bgImageUrl,
         bgOpacity: document.getElementById('bgOpacitySlider')?.value || '50',
         glassEffect: document.getElementById('glassEffectToggle')?.checked || false,
         cassetteBgColor: document.getElementById('cassetteBgColor')?.value || '#e8e0d0',
-        stickerColor: document.getElementById('stickerColor')?.value || '#8B4513',
+        stickerColor: document.getElementById('stickerColor')?.value || '#785b3a',
         gridColor: document.getElementById('gridColor')?.value || '#e8e0d0',
         textureStyle: document.getElementById('textureStyle')?.value || 'grid',
         currentSide: currentSide,
@@ -3463,13 +3556,14 @@ function loadUserSettings() {
                         const opacity = (settings.bgOpacity || '50') / 100;
                         iphoneContainer.style.background = `url(${settings.bgImageUrl}) center/cover no-repeat rgba(0,0,0,${opacity}) !important`;
                     } else {
-                        // 如果没有背景图片，应用颜色渐变
-                        // 生成渐变颜色，与applyBgColor函数保持一致
-                        const color = settings.bgColor || '#1a3834';
-                        const lightColor = adjustColorBrightness(color, 10);
-                        const darkColor = adjustColorBrightness(color, -10);
+                        // 如果没有背景图片，应用颜色
+                        // 使用纯色背景，过滤无效颜色（如黑色）
+                        let color = settings.bgColor;
+                        if (!color || color === '#000000' || color === '#000' || color === 'black' || color === 'rgb(0, 0, 0)') {
+                            color = '#1f6156';
+                        }
                         // 使用!important确保样式优先级
-                        iphoneContainer.style.background = `linear-gradient(145deg, ${lightColor} 0%, ${darkColor} 100%) !important`;
+                        iphoneContainer.style.background = `${color} !important`;
                     }
                     
                     // 应用毛玻璃效果
