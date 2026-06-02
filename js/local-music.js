@@ -3,26 +3,6 @@
 // Logger已在 player.js 中定义，无需重复定义
 
 let localMusicList = [];
-const Logger = {
-    isDebug: false, // 设置为 true 启用调试日志，false 禁用
-    debug(...args) {
-        if (this.isDebug) {
-            console.log('[DEBUG]', ...args);
-        }
-    },
-    info(...args) {
-        if (this.isDebug) {
-            console.log('[INFO]', ...args);
-        }
-    },
-    warn(...args) {
-        console.warn('[WARN]', ...args);
-    },
-    error(...args) {
-        console.error('[ERROR]', ...args);
-    }
-};
-// ============================================
 
 let localMusicList = [];
 
