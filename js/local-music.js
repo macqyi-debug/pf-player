@@ -4,8 +4,6 @@
 
 let localMusicList = [];
 
-let localMusicList = [];
-
 // IndexedDB 数据库名称和版本
 const DB_NAME = 'PFPlayerLocalMusic';
 const DB_VERSION = 1;
