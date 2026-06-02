@@ -1,5 +1,29 @@
 // 音乐播放器核心逻辑
 
+// ============================================
+// 日志控制模块
+// ============================================
+const Logger = {
+    isDebug: false, // 设置为 true 启用调试日志，false 禁用
+    debug(...args) {
+        if (this.isDebug) {
+            console.log('[DEBUG]', ...args);
+        }
+    },
+    info(...args) {
+        if (this.isDebug) {
+            console.log('[INFO]', ...args);
+        }
+    },
+    warn(...args) {
+        console.warn('[WARN]', ...args);
+    },
+    error(...args) {
+        console.error('[ERROR]', ...args);
+    }
+};
+// ============================================
+
 // 全局变量
 let audio;
 let playBtn;
@@ -30,8 +54,61 @@ let currentSongIndex = 0;
 let currentSide = 'A'; // 当前磁带面
 let playMode = 'repeat'; // 播放模式：repeat(列表循环), repeat_one(单曲循环), shuffle(随机播放)
 let audioCache = {}; // 音频缓存
+let audioCacheOrder = []; // 缓存访问顺序（用于 LRU）
 let isLoading = false; // 加载状态
 let volume = 0.7; // 默认音量
+const MAX_AUDIO_CACHE_SIZE = 10; // 最大缓存歌曲数量
+
+// 音频缓存管理器 - 防止缓存无限增长
+const audioCacheManager = {
+    // 添加缓存
+    add(songId, audioElement) {
+        // 如果缓存已满，删除最旧的缓存
+        if (audioCacheOrder.length >= MAX_AUDIO_CACHE_SIZE) {
+            const oldestId = audioCacheOrder.shift(); // 获取最旧的
+            if (audioCache[oldestId]) {
+                console.log(`清理过期缓存: ${oldestId}`);
+                delete audioCache[oldestId];
+            }
+        }
+        
+        // 添加到缓存
+        audioCache[songId] = audioElement;
+        audioCacheOrder.push(songId);
+    },
+    
+    // 检查是否存在
+    has(songId) {
+        return !!audioCache[songId];
+    },
+    
+    // 获取缓存
+    get(songId) {
+        return audioCache[songId];
+    },
+    
+    // 删除缓存
+    remove(songId) {
+        if (audioCache[songId]) {
+            delete audioCache[songId];
+            const index = audioCacheOrder.indexOf(songId);
+            if (index > -1) {
+                audioCacheOrder.splice(index, 1);
+            }
+        }
+    },
+    
+    // 清空所有缓存
+    clear() {
+        audioCache = {};
+        audioCacheOrder = [];
+    },
+    
+    // 获取缓存大小
+    size() {
+        return audioCacheOrder.length;
+    }
+};
 
 // 机械音效
 let mechanicalSound;
@@ -517,7 +594,7 @@ function initPlayer() {
             }, 500);
         }, 300);
     } catch (error) {
-        console.error('初始化播放器失败:', error);
+        Logger.error('初始化播放器失败:', error);
         showTooltip('播放器初始化失败，请刷新页面重试');
     }
 }
@@ -554,11 +631,7 @@ function bindEventListeners() {
         slideContainer.addEventListener('mouseleave', handleTouchEnd);
     }
     
-    // 磁带盒点击翻面事件
-    const cassette = document.querySelector('.cassette');
-    if (cassette) {
-        cassette.addEventListener('click', toggleSide);
-    }
+    // 磁带盒点击翻面事件 - 已在HTML中通过onclick绑定，此处不再重复绑定
 
     // 全局鼠标/触摸移动事件
     document.addEventListener('mousemove', handleDragMove);
@@ -619,12 +692,12 @@ function togglePlay() {
                 leftGear.classList.add('spinning');
                 rightGear.classList.add('spinning');
             }).catch(err => {
-                console.error('播放失败:', err);
+                Logger.error('播放失败:', err);
                 showTooltip('音频加载失败，请检查网络连接');
             });
         }
     } catch (error) {
-        console.error('播放/暂停操作失败:', error);
+        Logger.error('播放/暂停操作失败:', error);
         showTooltip('操作失败，请重试');
     }
 }
@@ -834,7 +907,7 @@ function handlePlaybackEnded() {
         // 自动播放下一首
         playNext();
     } catch (error) {
-        console.error('处理播放结束失败:', error);
+        Logger.error('处理播放结束失败:', error);
     }
 }
 
@@ -1136,6 +1209,972 @@ function parseLyrics(lyricsText) {
 }
 
 // 处理歌词断句和换行
+
+// 评论功能
+let user = null; // 当前登录用户
+let comments = []; // 评论列表
+
+// 切换评论容器显示/隐藏
+function toggleComments() {
+    try {
+        const commentContainer = document.getElementById('commentContainer');
+        if (commentContainer) {
+            if (commentContainer.style.maxHeight === '400px') {
+                commentContainer.style.maxHeight = '0';
+            } else {
+                commentContainer.style.maxHeight = '400px';
+                // 加载评论
+                loadComments();
+            }
+        }
+    } catch (error) {
+        console.error('切换评论容器失败:', error);
+    }
+}
+
+// 加载评论
+function loadComments() {
+    try {
+        const currentSong = playlist[currentSide][currentSongIndex];
+        if (!currentSong) return;
+        
+        // 从localStorage加载评论
+        const savedComments = localStorage.getItem('pfPlayerComments');
+        if (savedComments) {
+            const allComments = JSON.parse(savedComments);
+            // 根据当前歌曲ID过滤评论
+            comments = allComments.filter(comment => comment.songId === currentSong.id);
+        } else {
+            // 默认评论
+            comments = [
+                {
+                    id: 1,
+                    songId: currentSong.id,
+                    username: '游客',
+                    content: '这是一个示例评论，欢迎使用PF-Player！',
+                    time: '2026-02-11 12:00',
+                    level: 0
+                }
+            ];
+        }
+        renderComments();
+    } catch (error) {
+        console.error('加载评论失败:', error);
+    }
+}
+
+// 渲染评论列表
+function renderComments() {
+    try {
+        const commentList = document.getElementById('commentList');
+        if (commentList) {
+            commentList.innerHTML = '';
+            
+            comments.forEach(comment => {
+                const commentItem = document.createElement('div');
+                commentItem.className = 'comment-item';
+                commentItem.style = 'padding: 10px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.05);';
+                
+                const levelText = comment.level > 0 ? ` Lv${comment.level}` : '';
+                const isCurrentUserComment = user && user.username === comment.username;
+                
+                commentItem.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                        <div style="display: flex; align-items: center;">
+                            <span style="color: #d9ceb2; font-weight: bold; font-size: 12px;">${comment.username}${levelText}</span>
+                            <span style="color: #888; font-size: 10px; margin-left: 10px;">${comment.time}</span>
+                        </div>
+                        ${isCurrentUserComment ? `<button onclick="deleteComment(${comment.id})" style="padding: 2px 6px; background: rgba(255, 71, 87, 0.2); border: 1px solid rgba(255, 71, 87, 0.4); border-radius: 4px; color: #ff4757; font-size: 10px; cursor: pointer;">删除</button>` : ''}
+                    </div>
+                    <p style="color: #e8e0d0; font-size: 12px; margin: 0;">${comment.content}</p>
+                    <div style="margin-top: 5px;">
+                        <button onclick="replyToComment(${comment.id}, '${comment.username}')" style="padding: 2px 6px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 4px; color: #d9ceb2; font-size: 10px; cursor: pointer;">回复</button>
+                    </div>
+                `;
+                
+                commentList.appendChild(commentItem);
+            });
+        }
+    } catch (error) {
+        console.error('渲染评论失败:', error);
+    }
+}
+
+// 删除评论
+function deleteComment(commentId) {
+    try {
+        if (!user) {
+            showTooltip('请先登录');
+            return;
+        }
+        
+        // 确认删除
+        if (!confirm('确定要删除这条评论吗？')) {
+            return;
+        }
+        
+        // 从localStorage加载所有评论
+        const savedComments = localStorage.getItem('pfPlayerComments');
+        if (!savedComments) {
+            showTooltip('评论数据不存在');
+            return;
+        }
+        
+        let allComments = JSON.parse(savedComments);
+        
+        // 过滤掉要删除的评论及其回复
+        const filteredComments = allComments.filter(comment => {
+            return comment.id !== commentId && comment.parentId !== commentId;
+        });
+        
+        // 保存到localStorage
+        localStorage.setItem('pfPlayerComments', JSON.stringify(filteredComments));
+        
+        // 更新当前评论列表
+        const currentSong = playlist[currentSide][currentSongIndex];
+        if (currentSong) {
+            comments = filteredComments.filter(comment => comment.songId === currentSong.id);
+        }
+        
+        // 重新渲染评论
+        renderComments();
+        
+        showTooltip('评论删除成功');
+    } catch (error) {
+        console.error('删除评论失败:', error);
+        showTooltip('评论删除失败，请重试');
+    }
+}
+
+// 回复评论
+function replyToComment(commentId, username) {
+    try {
+        if (!user) {
+            showTooltip('请先登录');
+            return;
+        }
+        
+        const commentInput = document.getElementById('commentInput');
+        if (commentInput) {
+            commentInput.value = `@${username} `;
+            commentInput.focus();
+        }
+    } catch (error) {
+        console.error('回复评论失败:', error);
+    }
+}
+
+// 提交评论
+function submitComment() {
+    try {
+        if (!user) {
+            showTooltip('请先登录');
+            return;
+        }
+        
+        const currentSong = playlist[currentSide][currentSongIndex];
+        if (!currentSong) {
+            showTooltip('当前没有播放歌曲');
+            return;
+        }
+        
+        const commentInput = document.getElementById('commentInput');
+        const content = commentInput.value.trim();
+        
+        if (!content) {
+            showTooltip('请输入评论内容');
+            return;
+        }
+        
+        // 创建新评论
+        const newComment = {
+            id: Date.now(),
+            songId: currentSong.id,
+            username: user.username,
+            content: content,
+            time: new Date().toLocaleString('zh-CN'),
+            level: user.level,
+            parentId: null // 用于回复功能
+        };
+        
+        // 从localStorage加载所有评论
+        const savedComments = localStorage.getItem('pfPlayerComments');
+        let allComments = [];
+        if (savedComments) {
+            allComments = JSON.parse(savedComments);
+        }
+        
+        // 添加新评论
+        allComments.unshift(newComment);
+        
+        // 保存到localStorage
+        localStorage.setItem('pfPlayerComments', JSON.stringify(allComments));
+        
+        // 更新当前评论列表
+        comments = allComments.filter(comment => comment.songId === currentSong.id);
+        
+        // 清空输入框
+        commentInput.value = '';
+        
+        // 重新渲染评论
+        renderComments();
+        
+        showTooltip('评论发表成功');
+    } catch (error) {
+        console.error('提交评论失败:', error);
+        showTooltip('评论发表失败，请重试');
+    }
+}
+
+// 切换登录/注册弹窗
+function toggleLogin() {
+    try {
+        const loginModal = document.getElementById('loginModal');
+        if (loginModal) {
+            if (loginModal.style.display === 'flex') {
+                loginModal.style.display = 'none';
+            } else {
+                loginModal.style.display = 'flex';
+                // 更新弹窗状态
+                updateLoginModalStatus();
+            }
+        }
+    } catch (error) {
+        console.error('切换登录弹窗失败:', error);
+    }
+}
+
+// 显示登录表单
+function showLoginForm(type) {
+    try {
+        const loginInput = document.getElementById('loginInput');
+        if (loginInput) {
+            switch (type) {
+                case 'phone':
+                    loginInput.placeholder = '请输入手机号';
+                    break;
+                case 'wechat':
+                    loginInput.placeholder = '请输入微信号';
+                    break;
+                case 'netease':
+                    loginInput.placeholder = '请输入网易邮箱';
+                    break;
+                case 'google':
+                    loginInput.placeholder = '请输入谷歌邮箱';
+                    break;
+            }
+        }
+    } catch (error) {
+        console.error('显示登录表单失败:', error);
+    }
+}
+
+// 切换登录/注册表单
+function toggleAuthForm() {
+    try {
+        const loginForm = document.getElementById('loginForm');
+        const registerForm = document.getElementById('registerForm');
+        const toggleBtn = document.getElementById('toggleAuthBtn');
+        
+        if (loginForm.style.display !== 'none') {
+            loginForm.style.display = 'none';
+            registerForm.style.display = 'block';
+            toggleBtn.textContent = '已有账号？立即登录';
+        } else {
+            loginForm.style.display = 'block';
+            registerForm.style.display = 'none';
+            toggleBtn.textContent = '没有账号？立即注册';
+        }
+    } catch (error) {
+        console.error('切换登录/注册表单失败:', error);
+    }
+}
+
+// 登录
+function login() {
+    try {
+        const loginInput = document.getElementById('loginInput');
+        const passwordInput = document.getElementById('passwordInput');
+        const username = loginInput.value.trim();
+        const password = passwordInput.value.trim();
+        
+        if (!username || !password) {
+            showTooltip('请输入账号和密码');
+            return;
+        }
+        
+        // 从localStorage加载用户
+        const savedUsers = localStorage.getItem('pfPlayerUsers');
+        let users = [];
+        if (savedUsers) {
+            users = JSON.parse(savedUsers);
+        }
+        
+        // 查找用户
+        const existingUser = users.find(u => u.username === username && u.password === password);
+        
+        if (existingUser) {
+            // 登录成功
+            user = existingUser;
+            updateUserStatus();
+            toggleLogin();
+            showTooltip('登录成功');
+        } else {
+            showTooltip('账号或密码错误');
+        }
+    } catch (error) {
+        console.error('登录失败:', error);
+        showTooltip('登录失败，请重试');
+    }
+}
+
+// 注册
+function register() {
+    try {
+        const registerInput = document.getElementById('registerInput');
+        const registerPasswordInput = document.getElementById('registerPasswordInput');
+        const confirmPasswordInput = document.getElementById('confirmPasswordInput');
+        const username = registerInput.value.trim();
+        const password = registerPasswordInput.value.trim();
+        const confirmPassword = confirmPasswordInput.value.trim();
+        
+        if (!username || !password) {
+            showTooltip('请输入账号和密码');
+            return;
+        }
+        
+        if (password !== confirmPassword) {
+            showTooltip('两次输入的密码不一致');
+            return;
+        }
+        
+        // 从localStorage加载用户
+        const savedUsers = localStorage.getItem('pfPlayerUsers');
+        let users = [];
+        if (savedUsers) {
+            users = JSON.parse(savedUsers);
+        }
+        
+        // 检查用户是否已存在
+        const existingUser = users.find(u => u.username === username);
+        if (existingUser) {
+            showTooltip('账号已存在');
+            return;
+        }
+        
+        // 创建新用户
+        const newUser = {
+            username: username,
+            password: password,
+            level: 1,
+            registerDate: new Date().toISOString(),
+            lastLoginDate: new Date().toISOString()
+        };
+        
+        // 添加到用户列表
+        users.push(newUser);
+        
+        // 保存到localStorage
+        localStorage.setItem('pfPlayerUsers', JSON.stringify(users));
+        
+        // 自动登录
+        user = newUser;
+        updateUserStatus();
+        toggleLogin();
+        showTooltip('注册成功');
+    } catch (error) {
+        console.error('注册失败:', error);
+        showTooltip('注册失败，请重试');
+    }
+}
+
+// 更新用户状态
+function updateUserStatus() {
+    try {
+        const userStatus = document.getElementById('userStatus');
+        const loginBtn = document.getElementById('loginBtn');
+        const submitCommentBtn = document.getElementById('submitCommentBtn');
+        
+        if (user) {
+            // 更新用户等级
+            updateUserLevel();
+            
+            if (userStatus) {
+                userStatus.textContent = `欢迎，${user.username} (Lv${user.level})`;
+            }
+            
+            if (loginBtn) {
+                loginBtn.textContent = '退出登录';
+                loginBtn.onclick = logout;
+            }
+            
+            if (submitCommentBtn) {
+                submitCommentBtn.disabled = false;
+                submitCommentBtn.style.background = 'linear-gradient(145deg, #8B4513 0%, #D2B48C 100%)';
+                submitCommentBtn.style.color = '#e8e0d0';
+                submitCommentBtn.style.cursor = 'pointer';
+            }
+        } else {
+            if (userStatus) {
+                userStatus.textContent = '登录后可以发表评论';
+            }
+            
+            if (loginBtn) {
+                loginBtn.textContent = '登录/注册';
+                loginBtn.onclick = toggleLogin;
+            }
+            
+            if (submitCommentBtn) {
+                submitCommentBtn.disabled = true;
+                submitCommentBtn.style.background = 'rgba(139, 69, 19, 0.5)';
+                submitCommentBtn.style.color = '#888';
+                submitCommentBtn.style.cursor = 'not-allowed';
+            }
+        }
+    } catch (error) {
+        console.error('更新用户状态失败:', error);
+    }
+}
+
+// 退出登录
+function logout() {
+    try {
+        user = null;
+        updateUserStatus();
+        showTooltip('退出登录成功');
+    } catch (error) {
+        console.error('退出登录失败:', error);
+    }
+}
+
+// 显示用户设置界面
+function showUserSettings() {
+    try {
+        const loginForm = document.getElementById('loginForm');
+        const registerForm = document.getElementById('registerForm');
+        const userSettings = document.getElementById('userSettings');
+        const userMenu = document.getElementById('userMenu');
+        const toggleAuthBtn = document.getElementById('toggleAuthBtn');
+        
+        if (loginForm && registerForm && userSettings && userMenu && toggleAuthBtn) {
+            // 隐藏其他表单
+            loginForm.style.display = 'none';
+            registerForm.style.display = 'none';
+            userMenu.style.display = 'none';
+            toggleAuthBtn.style.display = 'none';
+            
+            // 显示用户设置表单
+            userSettings.style.display = 'block';
+            
+            // 设置标题
+            const modalTitle = document.querySelector('.login-modal h3');
+            if (modalTitle) {
+                modalTitle.textContent = '用户设置';
+            }
+        }
+    } catch (error) {
+        console.error('显示用户设置界面失败:', error);
+    }
+}
+
+// 更新用户设置
+function updateUserSettings() {
+    try {
+        const newUsernameInput = document.getElementById('newUsernameInput');
+        const currentPasswordInput = document.getElementById('currentPasswordInput');
+        const newPasswordInput = document.getElementById('newPasswordInput');
+        
+        const newUsername = newUsernameInput.value.trim();
+        const currentPassword = currentPasswordInput.value.trim();
+        const newPassword = newPasswordInput.value.trim();
+        
+        if (!currentPassword) {
+            showTooltip('请输入当前密码');
+            return;
+        }
+        
+        // 验证当前密码
+        if (user.password !== currentPassword) {
+            showTooltip('当前密码错误');
+            return;
+        }
+        
+        // 从localStorage加载用户
+        const savedUsers = localStorage.getItem('pfPlayerUsers');
+        if (!savedUsers) {
+            showTooltip('用户数据不存在');
+            return;
+        }
+        
+        let users = JSON.parse(savedUsers);
+        const userIndex = users.findIndex(u => u.username === user.username);
+        
+        if (userIndex === -1) {
+            showTooltip('用户不存在');
+            return;
+        }
+        
+        // 更新用户信息
+        if (newUsername) {
+            users[userIndex].username = newUsername;
+            user.username = newUsername;
+        }
+        
+        if (newPassword) {
+            users[userIndex].password = newPassword;
+            user.password = newPassword;
+        }
+        
+        // 保存到localStorage
+        localStorage.setItem('pfPlayerUsers', JSON.stringify(users));
+        
+        // 清空输入框
+        newUsernameInput.value = '';
+        currentPasswordInput.value = '';
+        newPasswordInput.value = '';
+        
+        // 更新用户状态
+        updateUserStatus();
+        
+        showTooltip('设置更新成功');
+        
+        // 关闭登录弹窗
+        toggleLogin();
+    } catch (error) {
+        console.error('更新用户设置失败:', error);
+        showTooltip('设置更新失败，请重试');
+    }
+}
+
+// 更新登录弹窗状态
+function updateLoginModalStatus() {
+    try {
+        const loginForm = document.getElementById('loginForm');
+        const registerForm = document.getElementById('registerForm');
+        const userSettings = document.getElementById('userSettings');
+        const userMenu = document.getElementById('userMenu');
+        const toggleAuthBtn = document.getElementById('toggleAuthBtn');
+        
+        if (loginForm && registerForm && userSettings && userMenu && toggleAuthBtn) {
+            if (user) {
+                // 已登录状态
+                loginForm.style.display = 'none';
+                registerForm.style.display = 'none';
+                userSettings.style.display = 'none';
+                toggleAuthBtn.style.display = 'none';
+                userMenu.style.display = 'block';
+                
+                // 设置标题
+                const modalTitle = document.querySelector('.login-modal h3');
+                if (modalTitle) {
+                    modalTitle.textContent = `欢迎，${user.username}`;
+                }
+            } else {
+                // 未登录状态
+                loginForm.style.display = 'block';
+                registerForm.style.display = 'none';
+                userSettings.style.display = 'none';
+                userMenu.style.display = 'none';
+                toggleAuthBtn.style.display = 'block';
+                
+                // 设置标题
+                const modalTitle = document.querySelector('.login-modal h3');
+                if (modalTitle) {
+                    modalTitle.textContent = '登录/注册';
+                }
+            }
+        }
+    } catch (error) {
+        console.error('更新登录弹窗状态失败:', error);
+    }
+}
+
+// 切换用户主页弹窗
+function toggleUserProfile() {
+    try {
+        const userProfileModal = document.getElementById('userProfileModal');
+        if (userProfileModal) {
+            if (userProfileModal.style.display === 'flex') {
+                userProfileModal.style.display = 'none';
+            } else {
+                userProfileModal.style.display = 'flex';
+                updateUserProfile();
+            }
+        }
+    } catch (error) {
+        console.error('切换用户主页弹窗失败:', error);
+    }
+}
+
+// 更新用户主页信息
+function updateUserProfile() {
+    try {
+        const profileUsername = document.getElementById('profileUsername');
+        const profileLevel = document.getElementById('profileLevel');
+        const profileRegTime = document.getElementById('profileRegTime');
+        const profileUsageTime = document.getElementById('profileUsageTime');
+        const likedSongsList = document.getElementById('likedSongsList');
+        const profileBgImage = document.getElementById('profileBgImage');
+        const profileBgPlaceholder = document.getElementById('profileBgPlaceholder');
+        const avatarImage = document.getElementById('avatarImage');
+        const avatarPlaceholder = document.getElementById('avatarPlaceholder');
+        
+        if (user) {
+            // 已登录状态
+            if (profileUsername) profileUsername.textContent = user.username;
+            if (profileLevel) profileLevel.textContent = `Lv${user.level}`;
+            if (profileRegTime) profileRegTime.textContent = user.regTime;
+            
+            // 计算使用时长
+            if (profileUsageTime) {
+                const regDate = new Date(user.regTime);
+                const now = new Date();
+                const days = Math.floor((now - regDate) / (1000 * 60 * 60 * 24));
+                profileUsageTime.textContent = `${days}天`;
+            }
+            
+            // 显示喜欢的歌曲
+            if (likedSongsList) {
+                if (likedSongs.length > 0) {
+                    let likedSongsHTML = '';
+                    likedSongs.forEach((song, index) => {
+                        likedSongsHTML += `
+                            <div style="display: flex; align-items: center; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
+                                <div style="display: flex; align-items: center;">
+                                    <span style="color: #888; font-size: 10px; margin-right: 10px;">${index + 1}</span>
+                                    <div>
+                                        <div style="color: #d9ceb2; font-size: 12px;">${song.name}</div>
+                                        <div style="color: #888; font-size: 10px;">${song.artist}</div>
+                                    </div>
+                                </div>
+                                <button onclick="playLikedSong(${index})" style="padding: 2px 6px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 4px; color: #d9ceb2; font-size: 10px; cursor: pointer;">播放</button>
+                            </div>
+                        `;
+                    });
+                    likedSongsList.innerHTML = likedSongsHTML;
+                } else {
+                    likedSongsList.innerHTML = '<div style="text-align: center; color: #888; font-size: 12px; padding: 20px;">暂无喜欢的歌曲</div>';
+                }
+            }
+            
+            // 显示头像
+            if (avatarImage && avatarPlaceholder && user.avatar) {
+                avatarImage.src = user.avatar;
+                avatarImage.style.display = 'block';
+                avatarPlaceholder.style.display = 'none';
+            } else if (avatarImage && avatarPlaceholder) {
+                avatarImage.style.display = 'none';
+                avatarPlaceholder.style.display = 'block';
+            }
+            
+            // 显示背景图
+            if (profileBgImage && profileBgPlaceholder && user.bgImage) {
+                profileBgImage.src = user.bgImage;
+                profileBgImage.style.display = 'block';
+                profileBgPlaceholder.style.display = 'none';
+            } else if (profileBgImage && profileBgPlaceholder) {
+                profileBgImage.style.display = 'none';
+                profileBgPlaceholder.style.display = 'block';
+            }
+        } else {
+            // 未登录状态
+            if (profileUsername) profileUsername.textContent = '未登录';
+            if (profileLevel) profileLevel.textContent = 'Lv0';
+            if (profileRegTime) profileRegTime.textContent = '--';
+            if (profileUsageTime) profileUsageTime.textContent = '--';
+            if (likedSongsList) {
+                likedSongsList.innerHTML = '<div style="text-align: center; color: #888; font-size: 12px; padding: 20px;">请先登录</div>';
+            }
+            if (avatarImage && avatarPlaceholder) {
+                avatarImage.style.display = 'none';
+                avatarPlaceholder.style.display = 'block';
+            }
+            if (profileBgImage && profileBgPlaceholder) {
+                profileBgImage.style.display = 'none';
+                profileBgPlaceholder.style.display = 'block';
+            }
+        }
+    } catch (error) {
+        console.error('更新用户主页信息失败:', error);
+    }
+}
+
+// 上传头像
+function uploadAvatar() {
+    try {
+        if (!user) {
+            showTooltip('请先登录');
+            return;
+        }
+        
+        const avatarInput = document.getElementById('avatarInput');
+        const file = avatarInput.files[0];
+        
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const avatarData = e.target.result;
+                
+                // 更新用户数据
+                user.avatar = avatarData;
+                
+                // 从localStorage加载用户
+                const savedUsers = localStorage.getItem('pfPlayerUsers');
+                if (savedUsers) {
+                    let users = JSON.parse(savedUsers);
+                    const userIndex = users.findIndex(u => u.username === user.username);
+                    
+                    if (userIndex !== -1) {
+                        users[userIndex].avatar = avatarData;
+                        localStorage.setItem('pfPlayerUsers', JSON.stringify(users));
+                    }
+                }
+                
+                // 更新用户主页
+                updateUserProfile();
+                showTooltip('头像上传成功');
+            };
+            reader.readAsDataURL(file);
+        }
+    } catch (error) {
+        console.error('上传头像失败:', error);
+        showTooltip('头像上传失败，请重试');
+    }
+}
+
+// 上传背景图
+function uploadProfileBg() {
+    try {
+        if (!user) {
+            showTooltip('请先登录');
+            return;
+        }
+        
+        const profileBgInput = document.getElementById('profileBgInput');
+        const file = profileBgInput.files[0];
+        
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const bgData = e.target.result;
+                
+                // 更新用户数据
+                user.bgImage = bgData;
+                
+                // 从localStorage加载用户
+                const savedUsers = localStorage.getItem('pfPlayerUsers');
+                if (savedUsers) {
+                    let users = JSON.parse(savedUsers);
+                    const userIndex = users.findIndex(u => u.username === user.username);
+                    
+                    if (userIndex !== -1) {
+                        users[userIndex].bgImage = bgData;
+                        localStorage.setItem('pfPlayerUsers', JSON.stringify(users));
+                    }
+                }
+                
+                // 更新用户主页
+                updateUserProfile();
+                showTooltip('背景图上传成功');
+            };
+            reader.readAsDataURL(file);
+        }
+    } catch (error) {
+        console.error('上传背景图失败:', error);
+        showTooltip('背景图上传失败，请重试');
+    }
+}
+
+// 播放喜欢的歌曲
+function playLikedSong(index) {
+    try {
+        if (likedSongs[index]) {
+            const song = likedSongs[index];
+            
+            // 查找歌曲在播放列表中的位置
+            let found = false;
+            for (let i = 0; i < playlist[currentSide].length; i++) {
+                if (playlist[currentSide][i].id === song.id) {
+                    playSong(i);
+                    found = true;
+                    break;
+                }
+            }
+            
+            if (!found) {
+                showTooltip('歌曲不在当前播放列表中');
+            }
+        }
+    } catch (error) {
+        console.error('播放喜欢的歌曲失败:', error);
+    }
+}
+
+// 更新用户等级
+function updateUserLevel() {
+    try {
+        if (!user) return;
+        
+        const registerDate = new Date(user.registerDate);
+        const now = new Date();
+        const days = Math.floor((now - registerDate) / (1000 * 60 * 60 * 24));
+        
+        // 根据使用时长更新等级
+        let level = 1;
+        if (days >= 365) {
+            level = 4;
+        } else if (days >= 100) {
+            level = 3;
+        } else if (days >= 30) {
+            level = 2;
+        }
+        
+        if (level !== user.level) {
+            user.level = level;
+            
+            // 保存到localStorage
+            const savedUsers = localStorage.getItem('pfPlayerUsers');
+            if (savedUsers) {
+                let users = JSON.parse(savedUsers);
+                const userIndex = users.findIndex(u => u.username === user.username);
+                if (userIndex !== -1) {
+                    users[userIndex] = user;
+                    localStorage.setItem('pfPlayerUsers', JSON.stringify(users));
+                }
+            }
+        }
+        
+        // 更新最后登录时间
+        user.lastLoginDate = new Date().toISOString();
+    } catch (error) {
+        console.error('更新用户等级失败:', error);
+    }
+}
+
+// 喜欢收藏功能
+let likedSongs = [];
+
+// 切换喜欢状态
+function toggleLike() {
+    try {
+        const currentSong = playlist[currentSide][currentSongIndex];
+        const likeBtn = document.getElementById('likeBtn');
+        
+        if (!currentSong) return;
+        
+        // 从localStorage加载喜欢的歌曲
+        const savedLikedSongs = localStorage.getItem('pfPlayerLikedSongs');
+        if (savedLikedSongs) {
+            likedSongs = JSON.parse(savedLikedSongs);
+        }
+        
+        // 检查歌曲是否已被喜欢
+        const isLiked = likedSongs.some(song => song.id === currentSong.id);
+        
+        if (isLiked) {
+            // 取消喜欢
+            likedSongs = likedSongs.filter(song => song.id !== currentSong.id);
+            showTooltip('已取消收藏');
+        } else {
+            // 添加喜欢
+            likedSongs.push(currentSong);
+            showTooltip('收藏成功');
+        }
+        
+        // 保存到localStorage
+        localStorage.setItem('pfPlayerLikedSongs', JSON.stringify(likedSongs));
+        
+        // 更新喜欢按钮状态
+        updateLikeBtnStatus();
+    } catch (error) {
+        console.error('切换喜欢状态失败:', error);
+        showTooltip('操作失败，请重试');
+    }
+}
+
+// 更新喜欢按钮状态
+function updateLikeBtnStatus() {
+    try {
+        const currentSong = playlist[currentSide][currentSongIndex];
+        const likeBtn = document.getElementById('likeBtn');
+        
+        if (!currentSong || !likeBtn) return;
+        
+        // 检查歌曲是否已被喜欢
+        const isLiked = likedSongs.some(song => song.id === currentSong.id);
+        
+        const likeIcon = likeBtn.querySelector('svg path');
+        if (likeIcon) {
+            if (isLiked) {
+                // 喜欢状态 - 红色心形
+                likeIcon.setAttribute('fill', '#ff4757');
+            } else {
+                // 未喜欢状态 - 米色心形
+                likeIcon.setAttribute('fill', '#d9ceb2');
+            }
+        }
+    } catch (error) {
+        console.error('更新喜欢按钮状态失败:', error);
+    }
+}
+
+// 初始化用户状态和喜欢状态
+function initUserAndLikeStatus() {
+    try {
+        // 从localStorage加载用户
+        const savedUsers = localStorage.getItem('pfPlayerUsers');
+        if (savedUsers) {
+            const users = JSON.parse(savedUsers);
+            // 简单起见，这里加载第一个用户
+            if (users.length > 0) {
+                user = users[0];
+            }
+        }
+        
+        // 从localStorage加载喜欢的歌曲
+        const savedLikedSongs = localStorage.getItem('pfPlayerLikedSongs');
+        if (savedLikedSongs) {
+            likedSongs = JSON.parse(savedLikedSongs);
+        }
+        
+        // 更新用户状态
+        updateUserStatus();
+        
+        // 更新喜欢按钮状态
+        updateLikeBtnStatus();
+    } catch (error) {
+        console.error('初始化用户和喜欢状态失败:', error);
+    }
+}
+
+// 限制评论长度
+function limitCommentLength() {
+    try {
+        const commentInput = document.getElementById('commentInput');
+        const commentLength = document.getElementById('commentLength');
+        
+        if (commentInput && commentLength) {
+            let content = commentInput.value;
+            
+            // 限制字符数为500
+            if (content.length > 500) {
+                content = content.substring(0, 500);
+                commentInput.value = content;
+            }
+            
+            // 更新字符数显示
+            commentLength.textContent = `${content.length}/500`;
+        }
+    } catch (error) {
+        console.error('限制评论长度失败:', error);
+    }
+}
+
+// 页面加载完成后初始化
+window.addEventListener('DOMContentLoaded', function() {
+    // 初始化用户和喜欢状态
+    initUserAndLikeStatus();
+});
 function processLyricText(text) {
     // 短句逗号之后换行
     const sentences = text.split(/[,，]/).map(s => s.trim()).filter(s => s);
@@ -1330,9 +2369,9 @@ function playSong(index) {
             }
             
             // 检查是否有缓存的音频
-            if (audioCache[song.id]) {
+            if (audioCacheManager.has(song.id)) {
                 // 使用缓存的音频
-                audio.src = audioCache[song.id].src;
+                audio.src = audioCacheManager.get(song.id).src;
                 playAudio(song);
             } else {
                 // 创建新的音频对象并缓存
@@ -1340,8 +2379,8 @@ function playSong(index) {
                 audioElement.preload = 'auto';
                 
                 audioElement.addEventListener('loadedmetadata', () => {
-                    // 缓存音频
-                    audioCache[song.id] = audioElement;
+                    // 使用缓存管理器添加音频
+                    audioCacheManager.add(song.id, audioElement);
                     audio.src = song.url;
                     playAudio(song);
                 });
@@ -1355,6 +2394,12 @@ function playSong(index) {
                 // 开始加载
                 audioElement.load();
             }
+            
+            // 更新喜欢按钮状态
+            updateLikeBtnStatus();
+            
+            // 更新评论列表
+            loadComments();
             
             // 预加载下一首歌曲
             preloadNextSong(currentPlaylist, index);
@@ -1404,7 +2449,7 @@ function preloadNextSong(currentPlaylist, currentIndex) {
             case 'shuffle':
                 // 随机播放模式，随机选择一首未缓存的歌曲
                 const unCachedSongs = currentPlaylist.filter((song, index) => 
-                    index !== currentIndex && !audioCache[song.id]
+                    index !== currentIndex && !audioCacheManager.has(song.id)
                 );
                 if (unCachedSongs.length > 0) {
                     const randomSong = unCachedSongs[Math.floor(Math.random() * unCachedSongs.length)];
@@ -1419,7 +2464,7 @@ function preloadNextSong(currentPlaylist, currentIndex) {
                 // 列表循环模式，预加载下一首
                 nextIndex = (currentIndex + 1) % currentPlaylist.length;
                 const nextSong = currentPlaylist[nextIndex];
-                if (nextSong && !audioCache[nextSong.id]) {
+                if (nextSong && !audioCacheManager.has(nextSong.id)) {
                     preloadSong(nextSong);
                 }
                 break;
@@ -1432,11 +2477,11 @@ function preloadNextSong(currentPlaylist, currentIndex) {
 // 预加载指定歌曲
 function preloadSong(song) {
     try {
-        if (!audioCache[song.id]) {
+        if (!audioCacheManager.has(song.id)) {
             const audioElement = new Audio(song.url);
             audioElement.preload = 'metadata';
             audioElement.addEventListener('loadedmetadata', () => {
-                audioCache[song.id] = audioElement;
+                audioCacheManager.add(song.id, audioElement);
                 console.log(`预加载完成: ${song.name}`);
             });
             audioElement.addEventListener('error', () => {
@@ -1455,6 +2500,12 @@ function toggleSide() {
         // 获取磁带齿轮元素
         const leftGear = document.getElementById('leftGear');
         const rightGear = document.getElementById('rightGear');
+        const flipTooltip = document.getElementById('flipTooltip');
+        
+        // 显示翻面提示框
+        if (flipTooltip) {
+            flipTooltip.classList.add('show');
+        }
         
         // 添加快速旋转动画
         if (leftGear && rightGear) {
@@ -1515,6 +2566,11 @@ function toggleSide() {
                     labelArea.style.pointerEvents = 'auto';
                 }
                 
+                // 隐藏翻面提示框
+                if (flipTooltip) {
+                    flipTooltip.classList.remove('show');
+                }
+                
                 showTooltip(`已切换到 ${currentSide}-Side`);
             }, 1000); // 1秒动画时间
         } else {
@@ -1528,11 +2584,22 @@ function toggleSide() {
             currentSongIndex = 0;
             playSong(0);
             
+            // 隐藏翻面提示框
+            if (flipTooltip) {
+                flipTooltip.classList.remove('show');
+            }
+            
             showTooltip(`已切换到 ${currentSide}-Side`);
         }
     } catch (error) {
         console.error('切换磁带面失败:', error);
         showTooltip('切换失败，请重试');
+        
+        // 隐藏翻面提示框
+        const flipTooltip = document.getElementById('flipTooltip');
+        if (flipTooltip) {
+            flipTooltip.classList.remove('show');
+        }
     }
 }
 
@@ -2168,13 +3235,13 @@ function resetBackground() {
     
     if (iphoneContainer) {
         // 重置为默认背景
-        iphoneContainer.style.background = 'linear-gradient(145deg, #1a3834 0%, #20443e 100%) !important';
+        iphoneContainer.style.background = '#1f6156 !important';
         iphoneContainer.style.backdropFilter = 'none';
         iphoneContainer.style.backgroundColor = 'transparent';
     }
     
     if (bgColorPicker) {
-        bgColorPicker.value = '#1a3834';
+        bgColorPicker.value = '#1f6156';
     }
     
     if (bgOpacitySlider) {
@@ -2215,10 +3282,8 @@ function toggleGlassEffect() {
                 const opacity = (settings.bgOpacity || '50') / 100;
                 iphoneContainer.style.background = `url(${settings.bgImageUrl}) center/cover no-repeat rgba(0,0,0,${opacity}) !important`;
             } else {
-                const color = settings.bgColor || '#1a3834';
-                const lightColor = adjustColorBrightness(color, 10);
-                const darkColor = adjustColorBrightness(color, -10);
-                iphoneContainer.style.background = `linear-gradient(145deg, ${lightColor} 0%, ${darkColor} 100%) !important`;
+                const color = settings.bgColor || '#1f6156';
+                iphoneContainer.style.background = `${color} !important`;
             }
             showTooltip('毛玻璃效果已禁用');
         }
@@ -2239,7 +3304,7 @@ function resetCassetteStyle() {
     const gridThicknessValue = document.getElementById('gridThicknessValue');
     
     if (cassetteBgColor) cassetteBgColor.value = '#e8e0d0';
-    if (stickerColor) stickerColor.value = '#8B4513';
+    if (stickerColor) stickerColor.value = '#785b3a';
     if (gridColor) gridColor.value = '#e8e0d0';
     if (textureStyle) textureStyle.value = 'grid';
     if (gridThickness) gridThickness.value = 1;
@@ -2254,7 +3319,7 @@ function resetCassetteStyle() {
     }
     
     if (retroLabel) {
-        retroLabel.style.background = 'linear-gradient(180deg, #8B4513 0%, #8B4513 100%)';
+        retroLabel.style.background = 'linear-gradient(180deg, #785b3a 0%, #785b3a 100%)';
     }
     
     // 移除自定义样式
@@ -2452,12 +3517,12 @@ function saveUserSettings() {
     }
     
     const settings = {
-        bgColor: document.getElementById('bgColorPicker')?.value || '#1a3834',
+        bgColor: document.getElementById('bgColorPicker')?.value || '#1f6156',
         bgImageUrl: bgImageUrl,
         bgOpacity: document.getElementById('bgOpacitySlider')?.value || '50',
         glassEffect: document.getElementById('glassEffectToggle')?.checked || false,
         cassetteBgColor: document.getElementById('cassetteBgColor')?.value || '#e8e0d0',
-        stickerColor: document.getElementById('stickerColor')?.value || '#8B4513',
+        stickerColor: document.getElementById('stickerColor')?.value || '#785b3a',
         gridColor: document.getElementById('gridColor')?.value || '#e8e0d0',
         textureStyle: document.getElementById('textureStyle')?.value || 'grid',
         currentSide: currentSide,
@@ -2491,13 +3556,14 @@ function loadUserSettings() {
                         const opacity = (settings.bgOpacity || '50') / 100;
                         iphoneContainer.style.background = `url(${settings.bgImageUrl}) center/cover no-repeat rgba(0,0,0,${opacity}) !important`;
                     } else {
-                        // 如果没有背景图片，应用颜色渐变
-                        // 生成渐变颜色，与applyBgColor函数保持一致
-                        const color = settings.bgColor || '#1a3834';
-                        const lightColor = adjustColorBrightness(color, 10);
-                        const darkColor = adjustColorBrightness(color, -10);
+                        // 如果没有背景图片，应用颜色
+                        // 使用纯色背景，过滤无效颜色（如黑色）
+                        let color = settings.bgColor;
+                        if (!color || color === '#000000' || color === '#000' || color === 'black' || color === 'rgb(0, 0, 0)') {
+                            color = '#1f6156';
+                        }
                         // 使用!important确保样式优先级
-                        iphoneContainer.style.background = `linear-gradient(145deg, ${lightColor} 0%, ${darkColor} 100%) !important`;
+                        iphoneContainer.style.background = `${color} !important`;
                     }
                     
                     // 应用毛玻璃效果
