@@ -16,12 +16,30 @@ const Logger = {
         }
     },
     warn(...args) {
-        console.warn('[WARN]', ...args);
+        if (this.isDebug) {
+            console.warn('[WARN]', ...args);
+        }
     },
     error(...args) {
         console.error('[ERROR]', ...args);
     }
 };
+// ============================================
+
+// ============================================
+// Service Worker 注册（PWA支持）
+// ============================================
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./service-worker.js')
+            .then((registration) => {
+                Logger.debug('ServiceWorker registration successful with scope: ', registration.scope);
+            })
+            .catch((err) => {
+                Logger.debug('ServiceWorker registration failed: ', err);
+            });
+    });
+}
 // ============================================
 
 // 全局变量
@@ -67,7 +85,7 @@ const audioCacheManager = {
         if (audioCacheOrder.length >= MAX_AUDIO_CACHE_SIZE) {
             const oldestId = audioCacheOrder.shift(); // 获取最旧的
             if (audioCache[oldestId]) {
-                console.log(`清理过期缓存: ${oldestId}`);
+                Logger.debug(`清理过期缓存: ${oldestId}`);
                 delete audioCache[oldestId];
             }
         }
@@ -913,7 +931,7 @@ function handlePlaybackEnded() {
 
 // 音频错误处理
 function handleAudioError() {
-    console.error('音频错误:', audio.error);
+    Logger.debug('音频错误:', audio.error);
     showTooltip('音频加载失败，请检查网络连接');
 }
 
@@ -2386,7 +2404,7 @@ function playSong(index) {
                 });
                 
                 audioElement.addEventListener('error', () => {
-                    console.error('音频加载失败:', song.url);
+                    Logger.debug('音频加载失败:', song.url);
                     isLoading = false;
                     showTooltip('音频加载失败，请检查网络连接');
                 });
@@ -2429,12 +2447,17 @@ function playAudio(song) {
             // 保存用户设置
             saveUserSettings();
         }).catch(err => {
-            console.error('播放失败:', err);
+            // 优雅处理 AbortError（播放被暂停打断）
+            if (err.name === 'AbortError') {
+                Logger.debug('播放被暂停打断', err);
+            } else {
+                Logger.error('播放失败:', err);
+                showTooltip('音频加载失败，请检查网络连接');
+            }
             isLoading = false;
-            showTooltip('音频加载失败，请检查网络连接');
         });
     } catch (error) {
-        console.error('播放音频失败:', error);
+        Logger.error('播放音频失败:', error);
         isLoading = false;
         showTooltip('播放失败，请重试');
     }
@@ -2482,15 +2505,15 @@ function preloadSong(song) {
             audioElement.preload = 'metadata';
             audioElement.addEventListener('loadedmetadata', () => {
                 audioCacheManager.add(song.id, audioElement);
-                console.log(`预加载完成: ${song.name}`);
+                Logger.debug(`预加载完成: ${song.name}`);
             });
             audioElement.addEventListener('error', () => {
-                console.error('预加载失败:', song.url);
+                Logger.debug('预加载失败:', song.url);
             });
             audioElement.load();
         }
     } catch (error) {
-        console.error('预加载歌曲失败:', error);
+        Logger.debug('预加载歌曲失败:', error);
     }
 }
 
@@ -3077,29 +3100,29 @@ function bindBackgroundSettingsEvents() {
             glassEffectToggle.addEventListener('change', toggleGlassEffect);
         }
         
-        console.log('Background settings events bound successfully');
+        Logger.debug('Background settings events bound successfully');
     } catch (error) {
-        console.error('绑定背景设置事件失败:', error);
+        Logger.debug('绑定背景设置事件失败:', error);
     }
 }
 
 // 应用背景颜色
 function applyBgColor() {
-    console.log('applyBgColor called');
+    Logger.debug('applyBgColor called');
     const bgColorPicker = document.getElementById('bgColorPicker');
     const iphoneContainer = document.querySelector('.iphone-container');
     const glassEffectToggle = document.getElementById('glassEffectToggle');
     
-    console.log('Elements:', { bgColorPicker, iphoneContainer, glassEffectToggle });
+    Logger.debug('Elements:', { bgColorPicker, iphoneContainer, glassEffectToggle });
     
     if (bgColorPicker && iphoneContainer) {
         const color = bgColorPicker.value;
-        console.log('Selected color:', color);
+        Logger.debug('Selected color:', color);
         
         // 生成渐变颜色
         const lightColor = adjustColorBrightness(color, 10);
         const darkColor = adjustColorBrightness(color, -10);
-        console.log('Gradient colors:', { lightColor, darkColor });
+        Logger.debug('Gradient colors:', { lightColor, darkColor });
         
         // 移除可能的毛玻璃效果
         iphoneContainer.style.backdropFilter = 'none';
@@ -3111,8 +3134,8 @@ function applyBgColor() {
         iphoneContainer.style.background = gradientBackground;
         // 强制应用样式
         iphoneContainer.style.background = gradientBackground + ' !important';
-        console.log('Background style set to:', iphoneContainer.style.background);
-        console.log('Computed background style:', getComputedStyle(iphoneContainer).background);
+        Logger.debug('Background style set to:', iphoneContainer.style.background);
+        Logger.debug('Computed background style:', getComputedStyle(iphoneContainer).background);
         
         // 关闭毛玻璃效果
         if (glassEffectToggle) {
@@ -3123,9 +3146,9 @@ function applyBgColor() {
         saveUserSettings();
         
         showTooltip('背景颜色已更新');
-        console.log('Background color updated successfully');
+        Logger.debug('Background color updated successfully');
     } else {
-        console.error('Elements not found');
+        Logger.debug('Elements not found');
         showTooltip('设置失败，请重试');
     }
 }
@@ -3142,29 +3165,29 @@ function adjustColorBrightness(color, percent) {
 
 // 处理背景图片上传
 function handleBgImageUpload(event) {
-    console.log('handleBgImageUpload called');
+    Logger.debug('handleBgImageUpload called');
     const file = event.target.files[0];
     const iphoneContainer = document.querySelector('.iphone-container');
     const bgOpacitySlider = document.getElementById('bgOpacitySlider');
     const glassEffectToggle = document.getElementById('glassEffectToggle');
     
-    console.log('Elements:', { file, iphoneContainer, bgOpacitySlider, glassEffectToggle });
+    Logger.debug('Elements:', { file, iphoneContainer, bgOpacitySlider, glassEffectToggle });
     
     if (file && iphoneContainer) {
         const reader = new FileReader();
         
         reader.onload = function(e) {
             const imageUrl = e.target.result;
-            console.log('Image URL:', imageUrl);
+            Logger.debug('Image URL:', imageUrl);
             // 获取当前透明度设置
             const opacity = bgOpacitySlider ? bgOpacitySlider.value / 100 : 1;
-            console.log('Opacity:', opacity);
+            Logger.debug('Opacity:', opacity);
             
             // 直接设置背景样式，确保覆盖任何其他样式
             iphoneContainer.style.background = `url(${imageUrl}) center/cover no-repeat !important`;
             iphoneContainer.style.backgroundColor = `rgba(0,0,0,${opacity})`;
-            console.log('Background style set to:', iphoneContainer.style.background);
-            console.log('Background color set to:', iphoneContainer.style.backgroundColor);
+            Logger.debug('Background style set to:', iphoneContainer.style.background);
+            Logger.debug('Background color set to:', iphoneContainer.style.backgroundColor);
             
             // 关闭毛玻璃效果
             if (glassEffectToggle) {
@@ -3179,13 +3202,13 @@ function handleBgImageUpload(event) {
         };
         
         reader.onerror = function(error) {
-            console.error('File reader error:', error);
+            Logger.debug('File reader error:', error);
             showTooltip('图片加载失败，请重试');
         };
         
         reader.readAsDataURL(file);
     } else {
-        console.error('File or iphoneContainer not found');
+        Logger.debug('File or iphoneContainer not found');
         showTooltip('设置失败，请重试');
     }
 }
@@ -3444,14 +3467,14 @@ function addSong() {
 
 // 加载动画
 function initLoadingScreen() {
-    console.log('Initializing loading screen');
+    Logger.debug('Initializing loading screen');
     const loadingScreen = document.getElementById('loading-screen');
     const loadingBar = document.getElementById('loading-bar');
     
-    console.log('Loading screen elements:', { loadingScreen, loadingBar });
+    Logger.debug('Loading screen elements:', { loadingScreen, loadingBar });
     
     if (!loadingScreen || !loadingBar) {
-        console.error('Loading screen elements not found');
+        Logger.debug('Loading screen elements not found');
         return;
     }
     
@@ -3460,20 +3483,20 @@ function initLoadingScreen() {
         progress += 5;
         if (progress <= 100) {
             loadingBar.style.width = `${progress}%`;
-            console.log('Loading progress:', progress);
+            Logger.debug('Loading progress:', progress);
         } else {
             clearInterval(interval);
-            console.log('Loading complete, hiding screen');
+            Logger.debug('Loading complete, hiding screen');
             // 加载完成，隐藏首屏
             setTimeout(() => {
                 if (loadingScreen) {
                     loadingScreen.style.opacity = '0';
                     loadingScreen.style.transition = 'opacity 0.5s ease';
-                    console.log('Setting loading screen opacity to 0');
+                    Logger.debug('Setting loading screen opacity to 0');
                     setTimeout(() => {
                         if (loadingScreen) {
                             loadingScreen.style.display = 'none';
-                            console.log('Setting loading screen display to none');
+                            Logger.debug('Setting loading screen display to none');
                         }
                     }, 500);
                 }
@@ -3484,7 +3507,7 @@ function initLoadingScreen() {
 
 // 强制隐藏加载屏幕的函数，作为备用方案
 function forceHideLoadingScreen() {
-    console.log('Forcing hide loading screen');
+    Logger.debug('Forcing hide loading screen');
     const loadingScreen = document.getElementById('loading-screen');
     if (loadingScreen) {
         loadingScreen.style.opacity = '0';
@@ -3492,7 +3515,7 @@ function forceHideLoadingScreen() {
         setTimeout(() => {
             if (loadingScreen) {
                 loadingScreen.style.display = 'none';
-                console.log('Forced loading screen hidden');
+                Logger.debug('Forced loading screen hidden');
             }
         }, 500);
     }
@@ -3512,7 +3535,7 @@ function saveUserSettings() {
                 bgImageUrl = urlMatch[2];
             }
         } catch (error) {
-            console.error('提取背景图片URL失败:', error);
+            Logger.debug('提取背景图片URL失败:', error);
         }
     }
     
@@ -3531,9 +3554,9 @@ function saveUserSettings() {
     
     try {
         localStorage.setItem('pfPlayerSettings', JSON.stringify(settings));
-        console.log('设置保存成功:', settings);
+        Logger.debug('设置保存成功:', settings);
     } catch (error) {
-        console.error('保存设置失败:', error);
+        Logger.debug('保存设置失败:', error);
     }
 }
 
@@ -3543,7 +3566,7 @@ function loadUserSettings() {
         const savedSettings = localStorage.getItem('pfPlayerSettings');
         if (savedSettings) {
             const settings = JSON.parse(savedSettings);
-            console.log('加载设置:', settings);
+            Logger.debug('加载设置:', settings);
             
             // 应用设置
             if (document.getElementById('bgColorPicker')) {
@@ -3617,7 +3640,7 @@ function loadUserSettings() {
             return true;
         }
     } catch (error) {
-        console.error('加载设置失败:', error);
+        Logger.debug('加载设置失败:', error);
     }
     return false;
 }
@@ -3661,7 +3684,7 @@ function initPerformanceMonitoring() {
             firstContentfulPaint: performance.getEntriesByType('paint')[1]?.startTime || 0
         };
         
-        console.log('页面加载性能数据:', performanceData);
+        Logger.debug('页面加载性能数据:', performanceData);
         savePerformanceData('pageLoad', performanceData);
     });
     
@@ -3670,7 +3693,7 @@ function initPerformanceMonitoring() {
         const observer = new PerformanceObserver((list) => {
             list.getEntries().forEach((entry) => {
                 if (entry.duration > 50) {
-                    console.warn('长任务:', entry);
+                    Logger.debug('长任务:', entry);
                     savePerformanceData('longTask', {
                         duration: entry.duration,
                         startTime: entry.startTime,
@@ -3694,7 +3717,7 @@ function initPerformanceMonitoring() {
                 decodedBodySize: resource.decodedBodySize
             }));
             
-            console.log('资源加载性能数据:', resourceData);
+            Logger.debug('资源加载性能数据:', resourceData);
             savePerformanceData('resources', resourceData);
         });
         
@@ -3723,7 +3746,7 @@ function savePerformanceData(type, data) {
         
         localStorage.setItem('pfPlayerPerformance', JSON.stringify(performanceStorage));
     } catch (error) {
-        console.error('保存性能数据失败:', error);
+        Logger.debug('保存性能数据失败:', error);
     }
 }
 
@@ -3731,10 +3754,10 @@ function savePerformanceData(type, data) {
 function getPerformanceReport() {
     try {
         const performanceStorage = JSON.parse(localStorage.getItem('pfPlayerPerformance') || '{}');
-        console.log('性能报告:', performanceStorage);
+        Logger.debug('性能报告:', performanceStorage);
         return performanceStorage;
     } catch (error) {
-        console.error('获取性能报告失败:', error);
+        Logger.debug('获取性能报告失败:', error);
         return {};
     }
 }
@@ -3742,7 +3765,7 @@ function getPerformanceReport() {
 // 页面加载完成后初始化
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
-        console.log('DOMContentLoaded event fired');
+        Logger.debug('DOMContentLoaded event fired');
         // 初始化性能监控
         initPerformanceMonitoring();
         
@@ -3761,12 +3784,12 @@ if (document.readyState === 'loading') {
         
         // 添加额外的安全保障，确保加载屏幕在5秒后一定被隐藏
         setTimeout(() => {
-            console.log('Final safety check: forcing hide loading screen');
+            Logger.debug('Final safety check: forcing hide loading screen');
             forceHideLoadingScreen();
         }, 5000);
     });
 } else {
-    console.log('DOM already loaded');
+    Logger.debug('DOM already loaded');
     // 初始化性能监控
     initPerformanceMonitoring();
     
@@ -3785,7 +3808,7 @@ if (document.readyState === 'loading') {
     
     // 添加额外的安全保障，确保加载屏幕在5秒后一定被隐藏
     setTimeout(() => {
-        console.log('Final safety check: forcing hide loading screen');
+        Logger.debug('Final safety check: forcing hide loading screen');
         forceHideLoadingScreen();
     }, 5000);
 }
