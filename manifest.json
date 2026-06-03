@@ -3,9 +3,9 @@
   "short_name": "PF-Player",
   "description": "复古磁带风格的音乐播放器 - Pink Floyd专属",
   "start_url": "./index.html",
-  "display": "standalone",
-  "display_override": ["standalone", "fullscreen", "minimal-ui"],
-  "background_color": "#1a3834",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone", "minimal-ui"],
+  "background_color": "#1f6156",
   "theme_color": "#1f6156",
   "orientation": "portrait",
   "categories": ["entertainment", "music", "audio"],
@@ -16,14 +16,26 @@
   "scope": "./",
   "icons": [
     {
-      "src": "assets/images/icons/volume-icon.png",
+      "src": "assets/images/icons/PF-Logo.png",
       "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/images/icons/PF-Logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/images/icons/PF-Logo.png",
+      "sizes": "180x180",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "assets/images/icons/volume-icon.png",
-      "sizes": "512x512",
+      "src": "assets/images/icons/PF-Logo.png",
+      "sizes": "167x167",
       "type": "image/png",
       "purpose": "any"
     }
@@ -34,7 +46,7 @@
       "short_name": "播放",
       "description": "开始播放音乐",
       "url": "./index.html?action=play",
-      "icons": [{ "src": "assets/images/icons/volume-icon.png", "sizes": "192x192" }]
+      "icons": [{ "src": "assets/images/icons/PF-Logo.png", "sizes": "192x192" }]
     }
   ]
 }
