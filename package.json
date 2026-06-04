@@ -7,7 +7,18 @@
     "dev": "python3 -m http.server 8000",
     "deploy": "vercel --prod"
   },
-  "keywords": ["music", "player", "retro", "tape"],
+  "keywords": [
+    "music",
+    "player",
+    "retro",
+    "tape"
+  ],
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "lucide-react": "^1.17.0",
+    "react-router-dom": "^7.16.0",
+    "styled-components": "^6.4.2",
+    "zustand": "^5.0.14"
+  }
 }

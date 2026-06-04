@@ -48,6 +48,79 @@
             box-sizing: border-box;
         }
 
+        /* 页面容器 */
+        #page-container {
+            width: 100%;
+            max-width: 420px;
+            min-height: 100vh;
+            height: -webkit-fill-available;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* 底部导航栏 */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            height: calc(60px + env(safe-area-inset-bottom));
+            background: rgba(31, 97, 86, 0.95);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: env(safe-area-inset-bottom);
+            z-index: 1000;
+            max-width: 420px;
+            margin: 0 auto;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            height: 100%;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            padding: 8px 0;
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .nav-item.active {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-item.active .nav-icon {
+            transform: scale(1.1);
+            filter: drop-shadow(0 0 8px rgba(217, 206, 178, 0.6));
+        }
+
+        .nav-item.active .nav-text {
+            color: #d9ceb2;
+            font-weight: 600;
+        }
+
+        .nav-icon {
+            font-size: 22px;
+            margin-bottom: 4px;
+            transition: transform 0.3s ease, filter 0.3s ease;
+        }
+
+        .nav-text {
+            font-size: 12px;
+            color: rgba(217, 206, 178, 0.7);
+            transition: color 0.3s ease, font-weight 0.3s ease;
+        }
+
         /* iPhone 13 背景层容器 */
         .iphone-container,
         .loading-iphone-container {
@@ -2090,21 +2163,37 @@
         </div>
     </div>
 
+    <!-- 页面容器 -->
+    <div id="page-container"></div>
+
+    <!-- 底部导航栏 -->
+    <nav class="bottom-nav">
+        <button class="nav-item active" data-page="discover">
+            <span class="nav-icon">🎸</span>
+            <span class="nav-text">发现</span>
+        </button>
+        <button class="nav-item" data-page="meet">
+            <span class="nav-icon">💫</span>
+            <span class="nav-text">邂逅</span>
+        </button>
+        <button class="nav-item" data-page="my">
+            <span class="nav-icon">👤</span>
+            <span class="nav-text">我的</span>
+        </button>
+    </nav>
+
     <!-- 
     ============================================
     脚本加载顺序说明（重要！）
     ============================================
     1. player.js - 核心播放器逻辑，定义全局变量和函数
-    2. local-music.js - 本地音乐导入功能，依赖 player.js 中的：
-       - playlist 对象
-       - currentSide 变量
-       - renderPlaylist 函数
-       - generateCover 函数
-       - showTooltip 函数
-       ⚠️ 请勿调整加载顺序！
+    2. local-music.js - 本地音乐导入功能，依赖 player.js
+    3. app.js - 应用路由管理器
+    ⚠️ 请勿调整加载顺序！
     ============================================
     -->
     <script src="js/player.js"></script>
     <script src="js/local-music.js"></script>
+    <script src="js/app.js"></script>
 </body>
 </html>
