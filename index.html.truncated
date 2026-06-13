@@ -17,29 +17,25 @@
     <!-- Manifest -->
     <link rel="manifest" href="manifest.json">
     
-    <!-- JavaScript 脚本 -->
-    <script src="js/modules/errorHandler.js"></script>
-    <script src="js/player.js"></script>
-    <script src="js/stores/playerStore.js"></script>
-    <script src="js/modules/router.js"></script>
-    <script src="js/modules/uiManager.js"></script>
-    <script src="js/modules/searchModule.js"></script>
-    <script src="js/modules/recommendationModule.js"></script>
-    <script src="js/modules/localMusicModule.js"></script>
-    <script src="js/modules/hallOfFameModule.js"></script>
-    <script src="js/pages/discoverPage.js"></script>
-    <script src="js/pages/meetPage.js"></script>
-    <script src="js/pages/myPage.js"></script>
-    <script src="js/app.js"></script>
+    <!-- JavaScript 脚本 - 添加版本号强制刷新缓存 -->
+    <script src="js/player.js?v=20260606"></script>
+    <script src="js/stores/playerStore.js?v=20260606"></script>
+    <script src="js/modules/router.js?v=20260606"></script>
+    <script src="js/modules/uiManager.js?v=20260606"></script>
+    <script src="js/pages/discoverPage.js?v=20260606"></script>
+    <script src="js/pages/meetPage.js?v=20260606"></script>
+    <script src="js/pages/myPage.js?v=20260606"></script>
+    <script src="js/app.js?v=20260606"></script>
+    
+    <!-- 调试信息 -->
+    <script>
+        console.log('页面加载完成 - 版本 20260606');
+    </script>
     <!-- Apple Touch Icons -->
     <link rel="apple-touch-icon" href="assets/images/icons/PF-green-APP icon-03.png">
     <link rel="apple-touch-icon" sizes="180x180" href="assets/images/icons/PF-green-APP icon-03.png">
     <link rel="apple-touch-icon" sizes="167x167" href="assets/images/icons/PF-green-APP icon-03.png">
     <link rel="apple-touch-icon" sizes="192x192" href="assets/images/icons/PF-green-APP icon-03.png">
-    
-    <!-- 主样式文件 -->
-    <link rel="stylesheet" href="styles/main.css">
-    
     <style>
         * {
             margin: 0;
@@ -129,59 +125,25 @@
         }
         
         .mini-cover {
-            width: 44px;
-            height: 44px;
-            border-radius: 50%;
-            overflow: visible;
+            width: 40px;
+            height: 40px;
+            border-radius: 6px;
+            overflow: hidden;
             flex-shrink: 0;
-            position: relative;
+            background: linear-gradient(135deg, #1f6156, #143c37);
             display: flex;
             align-items: center;
             justify-content: center;
         }
         
         .mini-cover img {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
+            width: 100%;
+            height: 100%;
             object-fit: cover;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
         }
         
         .mini-cover-placeholder {
             font-size: 18px;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-        }
-        
-        /* 进度环 */
-        .mini-progress-ring {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 44px;
-            height: 44px;
-            transform: rotate(-90deg);
-        }
-        
-        .mini-progress-ring circle {
-            fill: none;
-            stroke-width: 3.6;
-        }
-
-        .mini-progress-ring .progress-bg {
-            stroke: rgba(217, 206, 178, 0.2);
-        }
-
-        .mini-progress-ring .progress-bar {
-            stroke: #ffffff;
-            stroke-linecap: round;
-            transition: stroke-dashoffset 0.3s ease;
         }
         
         /* 滚动曲目信息 */
@@ -349,7 +311,7 @@
             backdrop-filter: blur(20px);
             border-top-left-radius: 24px;
             border-top-right-radius: 24px;
-            z-index: 999;
+            z-index: 200;
             display: flex;
             flex-direction: column;
             transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
@@ -383,16 +345,15 @@
             border-radius: 10px;
             transition: all 0.2s ease;
             font-size: 14px;
-            background: transparent;
         }
         
         .playlist-tab:hover {
-            background: transparent;
+            background: rgba(217, 206, 178, 0.08);
             color: rgba(217, 206, 178, 0.8);
         }
         
         .playlist-tab.active {
-            background: transparent;
+            background: rgba(217, 206, 178, 0.15);
             color: #d9ceb2;
         }
         
@@ -420,68 +381,6 @@
         }
         
         .playlist-close:hover {
-            background: rgba(217, 206, 178, 0.1);
-            color: #d9ceb2;
-        }
-        
-        .playlist-header-actions {
-            position: relative;
-        }
-        
-        .playlist-more-btn {
-            width: 36px;
-            height: 36px;
-            background: transparent;
-            color: rgba(217, 206, 178, 0.6);
-            border: none;
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s ease;
-            padding: 0;
-        }
-        
-        .playlist-more-btn:hover {
-            background: rgba(217, 206, 178, 0.1);
-            color: #d9ceb2;
-        }
-        
-        .playlist-more-btn svg {
-            width: 18px;
-            height: 18px;
-        }
-        
-        .playlist-more-menu {
-            position: absolute;
-            top: calc(100% + 8px);
-            right: 0;
-            background: rgba(20, 45, 43, 0.98);
-            backdrop-filter: blur(20px);
-            border-radius: 12px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            padding: 6px 0;
-            min-width: 120px;
-            display: none;
-            z-index: 300;
-            border: 1px solid rgba(217, 206, 178, 0.1);
-        }
-        
-        .playlist-more-menu.show {
-            display: block;
-        }
-        
-        .menu-item {
-            padding: 10px 16px;
-            color: rgba(217, 206, 178, 0.8);
-            cursor: pointer;
-            font-size: 13px;
-            transition: all 0.2s ease;
-            white-space: nowrap;
-        }
-        
-        .menu-item:hover {
             background: rgba(217, 206, 178, 0.1);
             color: #d9ceb2;
         }
@@ -519,23 +418,6 @@
         
         .playlist-item:hover {
             background: rgba(217, 206, 178, 0.08);
-        }
-        
-        .playlist-item.playing {
-            background: rgba(217, 206, 178, 0.15);
-            border-left: 3px solid #d9ceb2;
-        }
-        
-        .playlist-item.playing .playlist-item-title,
-        .playlist-item.playing .playlist-item-artist {
-            color: #d9ceb2;
-        }
-        
-        .playing-icon {
-            color: #d9ceb2;
-            font-size: 10px;
-            width: 20px;
-            text-align: center;
         }
         
         .playlist-item-number {
@@ -1082,7 +964,7 @@
         }
         
         .recommendation-card {
-            background: linear-gradient(135deg, #1f6156 0%, #3d8a7a 100%);
+            background: linear-gradient(135deg, rgba(217, 206, 178, 0.15) 0%, rgba(139, 69, 19, 0.2) 100%);
             border-radius: 12px;
             padding: 20px;
             cursor: pointer;
@@ -1144,20 +1026,12 @@
         .song-cover {
             width: 45px;
             height: 45px;
-            background: linear-gradient(135deg, #1a4d3e 0%, #2d8a6e 50%, #4db6ac 100%);
+            background: #8B4513;
             border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 22px;
-            overflow: hidden;
-        }
-        
-        .song-cover img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            border-radius: 8px;
         }
         
         .song-details {
@@ -1352,9 +1226,9 @@
         }
         
         .danmaku-track {
-            height: 250px;
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 10px;
+            height: 30px;
+            background: rgba(217, 206, 178, 0.1);
+            border-radius: 15px;
             margin: 15px 0;
             overflow: hidden;
             position: relative;
@@ -1364,44 +1238,21 @@
             position: absolute;
             top: 0;
             left: 0;
-            width: 100%;
+            width: 200%;
             height: 100%;
-            background-color: transparent;
+            background: linear-gradient(90deg, 
+                transparent 0%, 
+                rgba(217, 206, 178, 0.3) 25%, 
+                transparent 50%, 
+                rgba(217, 206, 178, 0.3) 75%, 
+                transparent 100%
+            );
+            animation: danmaku-move 8s linear infinite;
         }
         
-        .danmaku-item {
-            position: absolute;
-            white-space: nowrap;
-            animation: danmaku-scroll 12s linear infinite;
-            font-size: 14px;
-            background: transparent;
-            line-height: 1.2;
-        }
-        
-        .danmaku-item:nth-child(1) { top: 5%; animation-duration: 12s; animation-delay: 0s; color: #d9ceb2; }
-        .danmaku-item:nth-child(2) { top: 17%; animation-duration: 13s; animation-delay: -2s; color: #00ff88; }
-        .danmaku-item:nth-child(3) { top: 29%; animation-duration: 11s; animation-delay: -4s; color: #ffb6c1; }
-        .danmaku-item:nth-child(4) { top: 41%; animation-duration: 14s; animation-delay: -6s; color: #d9ceb2; }
-        .danmaku-item:nth-child(5) { top: 53%; animation-duration: 12s; animation-delay: -8s; color: #00ff88; }
-        .danmaku-item:nth-child(6) { top: 65%; animation-duration: 15s; animation-delay: -3s; color: #ffb6c1; }
-        .danmaku-item:nth-child(7) { top: 77%; animation-duration: 12s; animation-delay: -7s; color: #d9ceb2; }
-        .danmaku-item:nth-child(8) { top: 89%; animation-duration: 13s; animation-delay: -5s; color: #00ff88; }
-        
-        @keyframes danmaku-scroll {
-            0% { 
-                transform: translateX(100vw);
-                opacity: 0;
-            }
-            5% {
-                opacity: 1;
-            }
-            90% {
-                opacity: 1;
-            }
-            100% { 
-                transform: translateX(-100%);
-                opacity: 0;
-            }
+        @keyframes danmaku-move {
+            0% { transform: translateX(-50%); }
+            100% { transform: translateX(0%); }
         }
         
         .danmaku-feed {
@@ -1940,6 +1791,8 @@
             }
         }
 
+
+
         /* 背景装饰 */
         .bg-decoration {
             position: absolute;
@@ -2080,13 +1933,6 @@
             font-size: 13px;
             color: rgba(255, 255, 255, 0.4);
             letter-spacing: 1px;
-            opacity: 1;
-            animation: breathHint 2s ease-in-out infinite;
-        }
-        
-        @keyframes breathHint {
-            0%, 100% { opacity: 0.4; }
-            50% { opacity: 0.8; }
         }
 
         /* 歌词容器滚动样式优化 */
@@ -3445,903 +3291,24 @@
                 height: 20px;
             }
         }
-        
-        /* 横竖屏切换按钮 */
-        .rotate-screen-btn {
-            background: transparent;
-            border: none;
-            cursor: pointer;
-            padding: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #ffffff;
-            transition: all 0.3s ease;
-        }
-        
-        .rotate-screen-btn:hover {
-            color: #d9ceb2;
-            transform: scale(1.1);
-        }
-        
-        .rotate-screen-btn svg {
-            width: 24px;
-            height: 24px;
-        }
-        
-        /* 横屏模式容器 */
-        .landscape-player-container {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(31, 97, 86, 0.95);
-            z-index: 10000;
-            flex-direction: row;
-            overflow: hidden;
-            will-change: transform, opacity;
-            transform: translateZ(0);
-        }
-        
-        .landscape-player-container.active {
-            display: flex;
-            animation: fadeIn 0.2s ease-out;
-        }
-        
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: scale(0.95);
+
+        /* 竖屏模式优化 */
+        @media screen and (orientation: portrait) {
+            /* 确保在竖屏模式下良好显示 */
+            body {
+                min-height: 100vh;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: flex-start;
+                padding: 20px 10px;
+                box-sizing: border-box;
             }
-            to {
-                opacity: 1;
-                transform: scale(1);
+
+            .music-player {
+                max-width: 100%;
+                width: 100%;
             }
-        }
-        
-        /* 横屏左侧：黑胶唱片机 */
-        .landscape-left {
-            width: 50%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            position: relative;
-        }
-        
-        /* 复古唱片机容器 */
-        .vinyl-player {
-            position: relative;
-            width: 320px;
-            height: 320px;
-            margin: 0 auto;
-            padding-top: 4px;
-            padding-bottom: 4px;
-        }
-        
-        /* 木质机箱 - 俯视图 */
-        .vinyl-cabinet {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(145deg, #8B5A2B 0%, #6B4423 50%, #5A381F 100%);
-            border-radius: 20px;
-            box-shadow: 
-                0 8px 30px rgba(0, 0, 0, 0.5),
-                inset 0 2px 0 rgba(255, 255, 255, 0.1),
-                inset 0 -2px 0 rgba(0, 0, 0, 0.2);
-            border: 4px solid #DECBA4;
-        }
-        
-        /* 木纹效果 */
-        .vinyl-cabinet::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: repeating-linear-gradient(
-                0deg,
-                transparent 0px,
-                transparent 3px,
-                rgba(100, 70, 40, 0.3) 4px,
-                transparent 5px
-            );
-            border-radius: 16px;
-        }
-        
-        /* 机箱顶部装饰条 - 俯视图隐藏 */
-        .cabinet-top-strip {
-            display: none;
-        }
-        
-        /* 喇叭网格 - 左侧 - 俯视图隐藏 */
-        .speaker-grid-left {
-            display: none;
-        }
-        
-        .speaker-grid-inner {
-            display: none;
-        }
-        
-        /* 喇叭网格 - 右侧 - 俯视图隐藏 */
-        .speaker-grid-right {
-            display: none;
-        }
-        
-        /* 机箱中间面板 - 俯视图隐藏 */
-        .cabinet-center-panel {
-            display: none;
-        }
-        
-        /* 旋钮 - 俯视图隐藏 */
-        .cabinet-knob {
-            display: none;
-        }
-        
-        /* 唱片底座 */
-        .vinyl-platter-base {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 260px;
-            height: 260px;
-            background: linear-gradient(145deg, #DECBA4 0%, #C4A484 50%, #8B7355 100%);
-            border-radius: 50%;
-            box-shadow: 
-                0 8px 30px rgba(0, 0, 0, 0.3),
-                inset 0 2px 10px rgba(255, 255, 255, 0.2);
-            border: 3px solid #6B4F10;
-        }
-        
-        /* 唱片定位容器 */
-        .vinyl-disc-wrapper {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 220px;
-            height: 220px;
-        }
-        
-        /* 白色唱片 */
-        .vinyl-disc {
-            position: absolute;
-            top: -5px;
-            left: -5px;
-            transform: translate(-50%, -50%);
-            width: 230px;
-            height: 230px;
-            background: linear-gradient(145deg, #f5f5f5 0%, #e8e8e8 100%);
-            border-radius: 50%;
-            box-shadow: 
-                inset 0 0 30px rgba(0, 0, 0, 0.1),
-                0 4px 15px rgba(0, 0, 0, 0.2);
-            border: 2px solid #d0d0d0;
-        }
-        
-        .vinyl-disc.spinning {
-            animation: spin 3s linear infinite;
-        }
-        
-        /* 唱片第一层同心圆 */
-        .vinyl-disc::before {
-            content: '';
-            position: absolute;
-            top: 15px;
-            left: 15px;
-            right: 15px;
-            bottom: 15px;
-            border: 1px solid #d4c4b0;
-            border-radius: 50%;
-        }
-        
-        /* 唱片第二层同心圆 */
-        .vinyl-disc::after {
-            content: '';
-            position: absolute;
-            top: 40px;
-            left: 40px;
-            right: 40px;
-            bottom: 40px;
-            border: 1px solid #d4c4b0;
-            border-radius: 50%;
-        }
-        
-        /* 唱片第三层同心圆 */
-        .vinyl-disc-inner {
-            position: absolute;
-            top: 65px;
-            left: 65px;
-            right: 65px;
-            bottom: 65px;
-            border: 1px solid #d4c4b0;
-            border-radius: 50%;
-        }
-        /* 唱片纹路 */
-        .vinyl-grooves {
-            position: absolute;
-            top: auto;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: #fdf4ed;
-            border-width: 3px;
-            border-style: dotted;
-            border-color: #c4956e;
-            border-radius: 50%;
-        }
-        /* 唱片中央专辑封面区域 */
-        .vinyl-label {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 85px;
-            height: 85px;
-            padding-left: 20px;
-            padding-right: 20px;
-            padding-top: 0;
-            padding-bottom: 0;
-            background: #fff;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 
-                0 2px 10px rgba(0, 0, 0, 0.2),
-                inset 0 1px 3px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-            border: 2px solid #e0e0e0;
-        }
-        
-        .vinyl-label img {
-            width: 85px;
-            height: 85px;
-            object-fit: cover;
-            border-radius: 50%;
-        }
-        
-        /* 唱片中心孔 */
-        .vinyl-center {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 10%;
-            height: 10%;
-            background: linear-gradient(145deg, #C4A484 0%, #8B7355 100%);
-            border-radius: 50%;
-            box-shadow: 
-                0 2px 4px rgba(0, 0, 0, 0.3),
-                inset 0 1px 2px rgba(255, 255, 255, 0.3);
-            z-index: 5;
-        }
-        
-        /* 唱针组件 - 从上方延伸 */
-        .tonearm {
-            position: absolute;
-            top: 20px;
-            left: 290px;
-            transform: translateX(-50%);
-            width: 200px;
-            height: 250px;
-            transform-origin: top center;
-            transition: transform 0.6s ease-in-out;
-            z-index: 30;
-        }
-        
-        .tonearm.playing {
-            transform: translateX(-50%) rotate(0deg);
-        }
-        
-        .tonearm:not(.playing) {
-            transform: translateX(-50%) rotate(30deg);
-        }
-        
-        /* 唱针底座 - 在顶部 */
-        .tonearm-base {
-            position: absolute;
-            top: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(145deg, #C4A484 0%, #8B7355 100%);
-            border-radius: 50%;
-            box-shadow: 
-                0 4px 12px rgba(0, 0, 0, 0.4),
-                inset 0 2px 4px rgba(255, 255, 255, 0.3);
-            border: 3px solid #6B4423;
-        }
-        
-        /* 唱针底座装饰螺丝 */
-        .tonearm-base::before {
-            content: '';
-            position: absolute;
-            top: 8px;
-            left: 8px;
-            width: 8px;
-            height: 8px;
-            background: linear-gradient(145deg, #666 0%, #444 100%);
-            border-radius: 50%;
-            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5);
-        }
-        
-        .tonearm-base::after {
-            content: '';
-            position: absolute;
-            top: 22px;
-            left: 16px;
-            width: 4px;
-            height: 4px;
-            background: linear-gradient(145deg, #888 0%, #666 100%);
-            border-radius: 50%;
-            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5);
-        }
-        
-        /* 唱针臂 - 向下延伸 */
-        .tonearm-arm {
-            position: absolute;
-            top: 35px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 6px;
-            height: 65px;
-            background: linear-gradient(90deg, #C4A484 0%, #DECBA4 50%, #C4A484 100%);
-            border-radius: 3px;
-            box-shadow: 
-                2px 0 4px rgba(0, 0, 0, 0.2),
-                -1px 0 2px rgba(255, 255, 255, 0.3);
-        }
-        
-        /* 唱针臂连接处 */
-        .tonearm-joint {
-            position: absolute;
-            top: 90px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 14px;
-            height: 14px;
-            background: linear-gradient(145deg, #8B7355 0%, #6B4423 100%);
-            border-radius: 50%;
-            box-shadow: 
-                0 2px 4px rgba(0, 0, 0, 0.4),
-                inset 0 1px 2px rgba(255, 255, 255, 0.3);
-            z-index: 3;
-        }
-        
-        /* 唱针臂折线段 */
-        .tonearm-arm-2 {
-            position: absolute;
-            top: 100px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 5px;
-            height: 45px;
-            background: linear-gradient(90deg, #C4A484 0%, #DECBA4 50%, #C4A484 100%);
-            border-radius: 2px;
-            box-shadow: 
-                2px 0 4px rgba(0, 0, 0, 0.2),
-                -1px 0 2px rgba(255, 255, 255, 0.3);
-        }
-        
-        /* 唱针磁头外壳 */
-        .tonearm-head {
-            position: absolute;
-            bottom: -12px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 20px;
-            height: 14px;
-            background: linear-gradient(145deg, #C4A484 0%, #8B7355 100%);
-            border-radius: 4px 4px 3px 3px;
-            box-shadow: 
-                0 2px 4px rgba(0, 0, 0, 0.3),
-                inset 0 1px 2px rgba(255, 255, 255, 0.2);
-        }
-        
-        /* 唱针针尖 */
-        .tonearm-needle {
-            position: absolute;
-            bottom: -25px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 2px;
-            height: 15px;
-            background: linear-gradient(to bottom, #888 0%, #444 100%);
-            border-radius: 0 0 1px 1px;
-        }
-        
-        /* 唱针配重 - 隐藏 */
-        .tonearm-counterweight {
-            display: none;
-        }
-        
-        /* 复古播放按钮 */
-        .vinyl-play-btn {
-            position: absolute;
-            bottom: -40px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 50px;
-            height: 50px;
-            background: linear-gradient(145deg, #C4A484 0%, #8B7355 100%);
-            border: none;
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-            transition: all 0.3s ease;
-        }
-        
-        .vinyl-play-btn:hover {
-            transform: translateX(-50%) scale(1.1);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
-        }
-        
-        .vinyl-play-btn svg {
-            width: 24px;
-            height: 24px;
-            fill: #1a1a1a;
-            color: #1a1a1a;
-        }
-        
-        /* 旋转动画 */
-        @keyframes spin {
-            from { transform: translate(-50%, -50%) rotate(0deg); }
-            to { transform: translate(-50%, -50%) rotate(360deg); }
-        }
-        
-        .vinyl-disc.spinning {
-            animation: spin 3s linear infinite;
-        }
-        
-        /* 横屏右侧：歌词 */
-        .landscape-right {
-            width: 50%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            padding: 60px 20px 100px;
-            position: relative;
-        }
-        
-        .landscape-lyrics-container {
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px 0;
-        }
-        
-        .landscape-lyrics-content {
-            text-align: center;
-            padding: 0 20px;
-        }
-        
-        .landscape-lyric-line {
-            font-size: 20px;
-            color: rgba(217, 206, 178, 0.5);
-            padding: 15px 0;
-            transition: all 0.3s ease;
-            cursor: default;
-        }
-        
-        .landscape-lyric-line.active {
-            font-size: 16px;
-            color: #d9ceb2;
-            font-weight: bold;
-            text-shadow: 0 0 20px rgba(217, 206, 178, 0.5);
-        }
-        
-        /* 横屏顶部按钮栏 */
-        .landscape-top-bar {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            padding: 15px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            z-index: 10;
-        }
-        
-        .landscape-top-btn {
-            background: transparent;
-            border: none;
-            cursor: pointer;
-            padding: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #d9ceb2;
-            transition: all 0.3s ease;
-        }
-        
-        .landscape-top-btn:hover {
-            color: #fff;
-            transform: scale(1.1);
-        }
-        
-        .landscape-top-btn svg {
-            width: 28px;
-            height: 28px;
-        }
-        
-        /* 横屏底部播放控制栏 */
-        .landscape-bottom-bar {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 456px;
-            height: 50px;
-            margin-top: 30px;
-            margin-bottom: 30px;
-            margin-left: 490px;
-            margin-right: 490px;
-            padding: 20px 30px calc(20px + env(safe-area-inset-bottom));
-            background: transparent;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 25px;
-        }
-        
-        .landscape-control-btn {
-            background: transparent;
-            border: none;
-            cursor: pointer;
-            padding: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #d9ceb2;
-            transition: all 0.3s ease;
-        }
-        
-        .landscape-control-btn:hover {
-            color: #fff;
-            transform: scale(1.1);
-        }
-        
-        .landscape-control-btn.active {
-            color: #e74c3c;
-        }
-        
-        .landscape-control-btn svg {
-            width: 26px;
-            height: 26px;
-        }
-        
-        .landscape-play-btn {
-            width: 50px;
-            height: 50px;
-            background: transparent;
-            border: 2px solid #d9ceb2;
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s ease;
-        }
-        
-        .landscape-play-btn:hover {
-            border-color: #fff;
-            transform: scale(1.1);
-        }
-        
-        .landscape-play-btn svg {
-            width: 26px;
-            height: 26px;
-            fill: #d9ceb2;
-            color: #d9ceb2;
-            margin-left: 2px;
-        }
-        
-        /* 换肤弹窗 */
-        .skin-modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            z-index: 20000;
-            justify-content: center;
-            align-items: flex-end;
-        }
-        
-        .skin-modal.active {
-            display: flex;
-        }
-        
-        .skin-modal-content {
-            width: 100%;
-            background: rgba(26, 26, 46, 0.98);
-            border-radius: 20px 20px 0 0;
-            padding: 30px 20px calc(20px + env(safe-area-inset-bottom));
-            animation: slideUp 0.3s ease;
-        }
-        
-        @keyframes slideUp {
-            from {
-                transform: translateY(100%);
-            }
-            to {
-                transform: translateY(0);
-            }
-        }
-        
-        .skin-modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        
-        .skin-modal-title {
-            font-size: 18px;
-            color: #d9ceb2;
-            font-weight: bold;
-        }
-        
-        .skin-modal-close {
-            background: transparent;
-            border: none;
-            color: #d9ceb2;
-            font-size: 28px;
-            cursor: pointer;
-            padding: 5px;
-        }
-        
-        .skin-modal-body {
-            text-align: center;
-            padding: 40px 20px;
-        }
-        
-        .skin-modal-body p {
-            color: rgba(217, 206, 178, 0.6);
-            font-size: 16px;
-        }
-        
-        /* 摇滚名人堂样式 */
-        .hall-of-fame-cards {
-            display: flex;
-            gap: 16px;
-            overflow-x: auto;
-            padding: 10px 0;
-            scroll-snap-type: x mandatory;
-            -webkit-overflow-scrolling: touch;
-        }
-        
-        .hall-of-fame-cards::-webkit-scrollbar {
-            display: none;
-        }
-        
-        .artist-card {
-            flex-shrink: 0;
-            width: 180px;
-            height: 240px;
-            border-radius: 12px;
-            overflow: hidden;
-            position: relative;
-            cursor: pointer;
-            scroll-snap-align: start;
-            transition: transform 0.3s ease;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        }
-        
-        .artist-card:hover {
-            transform: scale(1.05);
-        }
-        
-        .card-poster {
-            width: 180px;
-            height: 240px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-end;
-            padding: 16px;
-            background-size: cover !important;
-            background-position: center !important;
-            background-repeat: no-repeat !important;
-            position: relative;
-        }
-        
-        .card-poster-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            pointer-events: none;
-            z-index: 1;
-            background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.1) 100%);
-        }
-        
-        .poster-content {
-            position: relative;
-            z-index: 2;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-        }
-        
-        .poster-avatar {
-            font-size: 36px;
-            font-weight: bold;
-            color: white;
-            margin-bottom: 12px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-        }
-        
-        .poster-name {
-            font-size: 16px;
-            font-weight: bold;
-            color: white;
-            text-align: center;
-            margin-bottom: 8px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-        }
-        
-        .poster-year {
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.9);
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
-        }
-        
-        .card-overlay {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: linear-gradient(transparent, rgba(0,0,0,0.8));
-            padding: 12px;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-        
-        .artist-card:hover .card-overlay {
-            opacity: 1;
-        }
-        
-        .view-details {
-            color: white;
-            font-size: 12px;
-        }
-        
-        .scroll-hint {
-            text-align: center;
-            padding: 10px;
-            color: rgba(217, 206, 178, 0.5);
-            font-size: 12px;
-        }
-        
-        /* 艺术家详情弹窗 */
-        .artist-detail-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 10001;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-        
-        .artist-detail-modal.active {
-            opacity: 1;
-        }
-        
-        .modal-backdrop {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-        }
-        
-        .artist-detail-modal .modal-content {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) scale(0.9);
-            width: 90%;
-            max-width: 400px;
-            max-height: 80vh;
-            background: #1f6156;
-            border-radius: 16px;
-            overflow: hidden;
-            transition: transform 0.3s ease;
-        }
-        
-        .artist-detail-modal.active .modal-content {
-            transform: translate(-50%, -50%) scale(1);
-        }
-        
-        .modal-close {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: rgba(0, 0, 0, 0.5);
-            border: none;
-            color: white;
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            font-size: 20px;
-            cursor: pointer;
-            z-index: 1;
-        }
-        
-        .artist-header {
-            padding: 30px 20px;
-            text-align: center;
-            color: white;
-        }
-        
-        .artist-avatar-large {
-            font-size: 48px;
-            font-weight: bold;
-            margin-bottom: 16px;
-        }
-        
-        .artist-header h2 {
-            margin: 0 0 8px 0;
-            font-size: 24px;
-        }
-        
-        .hall-year {
-            opacity: 0.8;
-            font-size: 14px;
-        }
-        
-        .artist-details {
-            padding: 20px;
-            max-height: 50vh;
-            overflow-y: auto;
-        }
-        
-        .detail-section {
-            margin-bottom: 16px;
-        }
-        
-        .detail-section h3 {
-            color: #d4a574;
-            font-size: 14px;
-            margin: 0 0 8px 0;
-        }
-        
-        .detail-section p, .detail-section li {
-            color: #d9ceb2;
-            font-size: 14px;
-            margin: 0;
-            line-height: 1.6;
-        }
-        
-        .detail-section ul {
-            margin: 0;
-            padding-left: 20px;
-        }
-        
-        .detail-section li {
-            margin-bottom: 4px;
         }
     </style>
 </head>
@@ -4365,7 +3332,7 @@
                 <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 20px;">
                     <h1 style="color: #d9ceb2; font-size: 36px; margin-bottom: 20px; font-family: 'Courier New', monospace; font-weight: 300;">PF-Player</h1>
                     <p style="color: #d9ceb2; font-size: 18px; margin-bottom: 40px; font-family: 'Courier New', monospace;">Wish You Were Here</p>
-                    <p style="color: rgba(217, 206, 178, 0.7); font-size: 12px; font-family: 'Courier New', monospace;">v4.2.0</p>
+                    <p style="color: rgba(217, 206, 178, 0.7); font-size: 12px; font-family: 'Courier New', monospace;">v4.1.1</p>
                 </div>
                 
                 <!-- 加载条区域 -->
@@ -4378,6 +3345,8 @@
             </div>
         </div>
     </div>
+
+
 
     <!-- iPhone 13 容器 -->
     <div class="iphone-container">
@@ -4393,11 +3362,6 @@
                 <!-- 左侧：专辑封面 + 滚动曲目信息 -->
                 <div class="mini-left" id="mini-player-trigger">
                     <div class="mini-cover">
-                        <!-- SVG 进度环 -->
-                        <svg class="mini-progress-ring" viewBox="0 0 44 44">
-                            <circle class="progress-bg" cx="22" cy="22" r="20"/>
-                            <circle class="progress-bar" cx="22" cy="22" r="20" stroke-dasharray="125.6" stroke-dashoffset="125.6" id="mini-progress-bar"/>
-                        </svg>
                         <img src="" alt="封面" id="mini-cover-img" style="display: none;">
                         <div class="mini-cover-placeholder" id="mini-cover-placeholder">💿</div>
                     </div>
@@ -4450,7 +3414,7 @@
             
         </div>
         
-        <!-- 统一播放列表面板 -->
+        <!-- 播放列表展开面板 -->
         <div class="playlist-panel" id="playlist-panel">
             <div class="playlist-panel-header">
                 <div class="playlist-tabs">
@@ -4465,21 +3429,6 @@
                     <div class="playlist-tab" data-tab="playlists">
                         <span>已播歌单</span>
                         <span class="playlist-count" id="playlists-count">0</span>
-                    </div>
-                </div>
-                <div class="playlist-header-actions">
-                    <!-- 更多操作按钮（三个点） -->
-                    <button class="playlist-more-btn" id="playlist-more-btn" title="更多操作">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="6" r="1.5"></circle>
-                            <circle cx="12" cy="12" r="1.5"></circle>
-                            <circle cx="12" cy="18" r="1.5"></circle>
-                        </svg>
-                    </button>
-                    <!-- 更多操作菜单 -->
-                    <div class="playlist-more-menu" id="playlist-more-menu">
-                        <div class="menu-item" data-action="clear">清空列表</div>
-                        <div class="menu-item" data-action="sort">歌曲排序</div>
                     </div>
                 </div>
             </div>
@@ -4513,19 +3462,21 @@
                     <h3>导入本地音乐</h3>
                     <button class="import-close-btn" id="import-close-btn">×</button>
                 </div>
-                <div class="import-body" id="drop-zone">
+                <div class="import-body" id="import-drop-zone">
                     <div class="import-icon">📁</div>
                     <p>拖拽音频文件到这里</p>
                     <p class="or-text">或者</p>
-                    <button class="import-select-btn" onclick="document.getElementById('music-file-input').click()">选择文件</button>
-                    <input type="file" id="music-file-input" multiple accept="audio/*" style="display: none;">
-                    <p class="supported-formats">支持格式：MP3, WAV, OGG, FLAC, AAC, M4A, WMA</p>
+                    <button class="import-select-btn" onclick="document.getElementById('audio-file-input').click()">选择文件</button>
+                    <input type="file" id="audio-file-input" multiple accept="audio/*" style="display: none;" onchange="handleAudioFilesSelect(event)">
+                    <p class="supported-formats">支持格式：MP3, WAV, OGG, FLAC</p>
                 </div>
             </div>
         </div>
         
         <!-- 背景装饰 -->
         <div class="bg-decoration"></div>
+
+
 
         <!-- 音频元素 -->
         <audio id="audioPlayer" preload="metadata">
@@ -4698,21 +3649,13 @@
                 </button>
                 
                 <!-- 滑动位置指示器（中间） -->
-                <div class="slide-indicators" id="slideIndicators" style="position: relative; top: auto; left: 55px; transform: none;">
+                <div class="slide-indicators" id="slideIndicators" style="position: relative; top: auto; left: auto; transform: none;">
                     <span class="indicator active" data-page="1"></span>
                     <span class="indicator" data-page="2"></span>
                 </div>
                 
-                <!-- 横竖屏切换按钮（白色，左侧） -->
-                <button class="rotate-screen-btn" id="rotateScreenBtn" onclick="toggleScreenOrientation()" style="position: relative; top: auto; right: auto; color: white;">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect>
-                        <line x1="12" y1="18" x2="12" y2="18"></line>
-                    </svg>
-                </button>
-                
-                <!-- 分享按钮（右侧，靠近横竖屏切换按钮） -->
-                <button class="share-btn" id="shareBtn" onclick="shareCurrentSong()" style="position: relative; top: auto; right: auto; margin-left: 5px;">
+                <!-- 分享按钮（右侧） -->
+                <button class="share-btn" id="shareBtn" onclick="shareCurrentSong()" style="position: relative; top: auto; right: auto;">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="18" cy="5" r="3"></circle>
                         <circle cx="6" cy="12" r="3"></circle>
@@ -4794,10 +3737,10 @@
                         </div>
                         
                         <!-- 歌词显示区域 -->
-                        <div class="lyrics-container" id="lyricsContent" style="width: 100%; max-width: 420px; height: 40px; display: flex; align-items: center; justify-content: center; margin-top: 10px; padding: 0; overflow: hidden; text-align: center;">
-                            <div class="lyrics-scroll-wrapper" id="lyricsScrollWrapper" style="width: 100%; overflow: hidden; white-space: nowrap; display: flex; justify-content: center; align-items: center;">
-                                <div class="lyrics-scroll-content" id="lyricsScrollContent" style="display: inline-block; white-space: nowrap; text-align: center;">
-                                    <span style="color: #d9ceb2; font-size: 16px; opacity: 0.5; display: inline-block;">等待播放...</span>
+                        <div class="lyrics-container" id="lyricsContent" style="width: 100%; max-width: 420px; height: 40px; display: flex; align-items: center; justify-content: center; margin-top: 10px; padding: 0; overflow: hidden;">
+                            <div class="lyrics-scroll-wrapper" id="lyricsScrollWrapper" style="width: 100%; overflow: hidden; white-space: nowrap;">
+                                <div class="lyrics-scroll-content" id="lyricsScrollContent" style="display: inline-block; white-space: nowrap;">
+                                    <span style="color: #d9ceb2; font-size: 16px; opacity: 0.8;">等待播放...</span>
                                 </div>
                             </div>
                         </div>
@@ -4873,7 +3816,7 @@
                                 </button>
 
                                 <!-- 上一首 -->
-                                <button class="control-btn" onclick="playPrevious()" title="上一首" style="transform: scale(1.5); flex-shrink: 0; width: 30px; height: 30px;">
+                                <button class="control-btn" onclick="playPrevious()" title="上一首" style="transform: scale(1.5); flex-shrink: 0;">
                                     <svg viewBox="0 0 24 24">
                                         <path d="M6 6h2v12H6zm3.5 6l8.5 6V6l-8.5 6z"/>
                                     </svg>
@@ -4890,7 +3833,7 @@
                                 </button>
 
                                 <!-- 下一首 -->
-                                <button class="control-btn" onclick="playNext()" title="下一首" style="transform: scale(1.5); flex-shrink: 0; width: 30px; height: 30px;">
+                                <button class="control-btn" onclick="playNext()" title="下一首" style="transform: scale(1.5); flex-shrink: 0;">
                                     <svg viewBox="0 0 24 24">
                                         <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>
                                     </svg>
@@ -4926,11 +3869,35 @@
                             </div>
                             <!-- 底部提示 -->
                             <div class="lyrics-footer">
-                                <span class="lyrics-hint" id="lyricsHint">右 滑 返 回 ></span>
+                                <span class="lyrics-hint">← 右滑返回播放界面</span>
                             </div>
                         </div>
                     </div>
                 </div>
+            </div>
+
+            <!-- 播放列表容器 -->
+            <div class="playlist-container" id="playlistContainer" style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(10, 40, 40, 0.95); border-radius: 20px 20px 0 0; max-height: 0; overflow: hidden; transition: max-height 0.3s ease; z-index: 9999;">
+                <div class="playlist-header" style="padding: 15px; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h3 style="color: #d9ceb2; font-size: 16px; margin: 0;">播放列表</h3>
+                        <button class="close-btn" onclick="togglePlaylist()" style="background: none; border: none; color: #d9ceb2; cursor: pointer; font-size: 24px;">×</button>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="text" id="searchInput" placeholder="搜索歌曲..." style="flex: 1; padding: 8px 12px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 4px; color: #d9ceb2; font-size: 12px;">
+                        <button onclick="searchSongs()" style="padding: 8px 12px; background: linear-gradient(145deg, #8B4513 0%, #D2B48C 100%); color: #e8e0d0; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">搜索</button>
+                        <label for="localMusicUpload" style="padding: 8px 12px; background: linear-gradient(145deg, #2C5F7C 0%, #4A90A4 100%); color: #d9ceb2; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                            </svg>
+                            导入音乐
+                        </label>
+                        <input type="file" id="localMusicUpload" accept="audio/*" multiple style="display: none;">
+                    </div>
+                </div>
+                <div class="playlist-content" id="playlistContent" style="max-height: 300px; overflow-y: auto; padding: 10px 0;"></div>
             </div>
 
             <!-- 评论留言容器 -->
@@ -5051,7 +4018,47 @@
                                     <span class="knob"></span>
                                 </label>
                             </label>
-                            
+                            <style>
+                                .switch {
+                                    position: relative;
+                                    display: inline-block;
+                                    width: 40px;
+                                    height: 20px;
+                                }
+                                .switch input {
+                                    opacity: 0;
+                                    width: 0;
+                                    height: 0;
+                                }
+                                .switch .slider {
+                                    position: absolute;
+                                    cursor: pointer;
+                                    top: 0;
+                                    left: 0;
+                                    right: 0;
+                                    bottom: 0;
+                                    background-color: rgba(255, 255, 255, 0.2);
+                                    transition: .4s;
+                                    border-radius: 20px;
+                                }
+                                .switch .knob {
+                                    position: absolute;
+                                    content: '';
+                                    height: 14px;
+                                    width: 14px;
+                                    left: 3px;
+                                    bottom: 3px;
+                                    background-color: #d9ceb2;
+                                    transition: .4s;
+                                    border-radius: 50%;
+                                }
+                                .switch input:checked + .slider {
+                                    background-color: rgba(255, 255, 255, 0.5);
+                                }
+                                .switch input:checked + .slider + .knob {
+                                    transform: translateX(20px);
+                                }
+                            </style>
                         </div>
 
                     </div>
@@ -5063,144 +4070,6 @@
                         <button onclick="saveUserSettings()" style="background: linear-gradient(145deg, #2a4d69 0%, #4a6d89 100%); color: #e8e0d0; border: none; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 11px; font-family: 'Source Han Sans CN Light', sans-serif; height: auto;">保存设置</button>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- 横屏播放器模式 -->
-    <div class="landscape-player-container" id="landscapePlayerContainer">
-        <!-- 顶部按钮栏 -->
-        <div class="landscape-top-bar">
-            <!-- 返回按钮（左侧） -->
-            <button class="landscape-top-btn" id="landscapeCloseBtn" onclick="closeLandscapePlayer()">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="15 18 9 12 15 6"></polyline>
-                </svg>
-            </button>
-            
-            <!-- 换肤按钮（右侧） -->
-            <button class="landscape-top-btn" id="landscapeSkinBtn" onclick="openSkinModal()">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="3"></circle>
-                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-                </svg>
-            </button>
-        </div>
-        
-        <!-- 左侧：复古唱片机 -->
-        <div class="landscape-left">
-            <div class="vinyl-player">
-                <!-- 木质机箱 -->
-                <div class="vinyl-cabinet">
-                    <div class="cabinet-top-strip"></div>
-                    <div class="speaker-grid-left">
-                        <div class="speaker-grid-inner"></div>
-                    </div>
-                    <div class="speaker-grid-right">
-                        <div class="speaker-grid-inner"></div>
-                    </div>
-                    <div class="cabinet-center-panel"></div>
-                    <div class="cabinet-knob"></div>
-                </div>
-                
-                <!-- 唱片底座 -->
-                <div class="vinyl-platter-base"></div>
-                
-                <!-- 唱片 -->
-                <div class="vinyl-disc-wrapper">
-                    <div class="vinyl-disc" id="vinylDisc">
-                        <!-- 唱片纹路 -->
-                        <div class="vinyl-grooves"></div>
-                        
-                        <!-- 唱片第三层同心圆 -->
-                        <div class="vinyl-disc-inner"></div>
-                        
-                        <!-- 唱片中央专辑封面区域 -->
-                        <div class="vinyl-label" id="vinylLabel">
-                            <img id="vinylCoverImg" src="" alt="专辑封面">
-                        </div>
-                        
-                        <!-- 唱片中心孔 -->
-                        <div class="vinyl-center"></div>
-                    </div>
-                </div>
-                
-                <!-- 唱针组件 -->
-                <div class="tonearm" id="tonearm">
-                    <div class="tonearm-base"></div>
-                    <div class="tonearm-counterweight"></div>
-                    <div class="tonearm-arm"></div>
-                    <div class="tonearm-joint"></div>
-                    <div class="tonearm-arm-2">
-                        <div class="tonearm-head"></div>
-                        <div class="tonearm-needle"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- 右侧：歌词显示 -->
-        <div class="landscape-right">
-            <div class="landscape-lyrics-container">
-                <div class="landscape-lyrics-content" id="landscapeLyricsContent">
-                    <!-- 歌词行将通过JavaScript动态填充 -->
-                </div>
-            </div>
-        </div>
-        
-        <!-- 底部播放控制栏 -->
-        <div class="landscape-bottom-bar">
-            <!-- 循环模式按钮 -->
-            <button class="landscape-control-btn" id="landscapeLoopBtn" onclick="toggleLoopMode()">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="17 1 21 5 17 9"></polyline>
-                    <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
-                    <polyline points="7 23 3 19 7 15"></polyline>
-                    <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
-                </svg>
-            </button>
-            
-            <!-- 上一首按钮 -->
-            <button class="landscape-control-btn" id="landscapePrevBtn" onclick="playPrevious()">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polygon points="19 20 9 12 19 4 19 20"></polygon>
-                    <line x1="5" y1="19" x2="5" y2="5"></line>
-                </svg>
-            </button>
-            
-            <!-- 播放/暂停按钮 -->
-            <button class="landscape-play-btn" id="landscapePlayBtn" onclick="togglePlayPause()">
-                <svg id="landscapePlayIcon" viewBox="0 0 24 24">
-                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                </svg>
-            </button>
-            
-            <!-- 下一首按钮 -->
-            <button class="landscape-control-btn" id="landscapeNextBtn" onclick="playNext()">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polygon points="5 4 15 12 5 20 5 4"></polygon>
-                    <line x1="19" y1="5" x2="19" y2="19"></line>
-                </svg>
-            </button>
-            
-            <!-- 喜欢按钮 -->
-            <button class="landscape-control-btn" id="landscapeLikeBtn" onclick="toggleFavoriteInLandscape()">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-                </svg>
-            </button>
-        </div>
-    </div>
-    
-    <!-- 换肤弹窗 -->
-    <div class="skin-modal" id="skinModal">
-        <div class="skin-modal-content">
-            <div class="skin-modal-header">
-                <span class="skin-modal-title">换肤</span>
-                <button class="skin-modal-close" onclick="closeSkinModal()">×</button>
-            </div>
-            <div class="skin-modal-body">
-                <p>功能待开发</p>
             </div>
         </div>
     </div>

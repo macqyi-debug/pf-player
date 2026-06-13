@@ -68,37 +68,9 @@ let isPlaying = false;
 let isRecording = false;
 let currentLyrics = [];
 let currentLyricIndex = -1;
-// 将歌词变量暴露为全局变量，供横屏模式使用
-window.currentLyrics = currentLyrics;
-window.currentLyricIndex = currentLyricIndex;
 let currentSongIndex = 0;
 let currentSide = 'A'; // 当前磁带面
-let currentTape = 0; // 当前磁带索引：0-默认磁带（Pink Floyd歌曲），1-本地歌曲磁带
 let playMode = 'repeat'; // 播放模式：repeat(列表循环), repeat_one(单曲循环), shuffle(随机播放)
-
-// 磁带配置
-const tapeConfigs = [
-    {
-        id: 'default',
-        name: 'Pink Floyd',
-        colors: {
-            case: 'linear-gradient(145deg, #e8e0d0 0%, #d9ceb2 50%, #c8b898 100%)',
-            label: '#1a1a1a',
-            screw: '#333'
-        },
-        side: 'A'
-    },
-    {
-        id: 'local',
-        name: '本地歌曲',
-        colors: {
-            case: 'linear-gradient(145deg, #2d5a4a 0%, #1f4235 50%, #152d25 100%)',
-            label: '#0d1a15',
-            screw: '#2a4a3a'
-        },
-        side: 'A'
-    }
-];
 let audioCache = {}; // 音频缓存
 let audioCacheOrder = []; // 缓存访问顺序（用于 LRU）
 let isLoading = false; // 加载状态
@@ -159,32 +131,39 @@ const audioCacheManager = {
 // 机械音效
 let mechanicalSound;
 
-// 播放列表（全局变量，供其他模块使用）
-window.playlist = {
+// 播放列表
+const playlist = {
     A: [
         {
-            id: '4237525',
-            name: 'Another Brick in the Wall, Pt. 2',
+            id: '4235817',
+            name: 'Wish You Were Here',
             artist: 'Pink Floyd',
-            album: 'The Wall',
+            album: 'Wish You Were Here',
             cover: 'http://p1.music.126.net/5sDLKpZW98XER9uuQrOHOw==/109951172026793754.jpg?param=300x300',
-            url: 'http://music.163.com/song/media/outer/url?id=4237525.mp3',
-            lyrics: `[00:00.00] 作词 : Roger Waters
-[00:01.00] 作曲 : Roger Waters
-[00:02.09]We don't need no education.
-[00:10.78]We don't need no thought control.
-[00:17.59]No dark sarcasm in the classroom.
-[00:28.59]Teacher, leave those kids alone.
-[00:38.27]Hey, Teacher, leave those kids alone!
-[00:48.59]All in all it's just another brick in the wall.
-[00:54.96]All in all you're just another brick in the wall.
-[01:05.09]We don't need no education.
-[01:15.40]We don't need no thought control.
-[01:24.02]No dark sarcasm in the classroom.
-[01:32.02]Teachers, leave those kids alone.
-[01:43.15]Hey, Teacher, leave us kids alone!
-[01:52.90]All in all you're just another brick in the wall.
-[02:02.34]All in all you're just another brick in the wall.`
+            url: 'http://music.163.com/song/media/outer/url?id=4235817.mp3',
+            lyrics: `[00:00.000] 作词 : Roger Waters
+[00:01.000] 作曲 : David Gilmour/Roger Waters
+[01:35.434]So, so you think you can tell
+[01:41.933]Heaven from Hell
+[01:45.694]Blue skies from pain
+[01:50.182]Can you tell a green field from a cold steel rail?
+[01:58.682]A smile from a veil?
+[02:02.676]Do you think you can tell?
+[02:07.179]And did they get you to trade
+[02:10.934]Your heroes for ghosts?
+[02:15.180]Hot ashes for trees?
+[02:19.173]Hot air for a cool breeze?
+[02:22.932]Cold comfort for change?
+[02:27.184]And did you exchange
+[02:30.427]A walk on part in the war
+[02:34.186]For a lead role in a cage?
+[03:16.690]How I wish, how I Wish You Were Here
+[03:23.181]We're just two lost souls swimming in a fish bowl
+[03:28.441]Year after year
+[03:32.932]Running over the same old ground
+[03:36.681]What have we found?
+[03:38.932]The same old fears
+[03:42.435]Wish You Were Here`
         },
         {
             id: '18309310',
@@ -192,7 +171,7 @@ window.playlist = {
             artist: 'Pink Floyd',
             album: 'The Wall',
             cover: 'http://p1.music.126.net/WaBh0-9dmRCQo3mdtrWY2Q==/109951172026873767.jpg?param=300x300',
-            url: 'http://music.163.com/song/media/outer/url?id=18309310.mp3',
+            url: 'http://music.163.com/song/media/outer/url?id=28238311.mp3',
             lyrics: `[00:00.000] 作词 : David Gilmour/Roger Waters
 [00:01.000] 作曲 : David Gilmour/Roger Waters
 [00:42.847]Hello.
@@ -218,7 +197,8 @@ window.playlist = {
 [02:21.296]This is not how I am.
 [02:27.585]I have become comfortably numb.
 [03:08.960]I have become comfortably numb.
-[03:20.197]Ok.[03:23.197]Just a little pinprick.
+[03:20.197]Ok.
+[03:23.197]Just a little pinprick.
 [03:26.516]There'll be no more --Aaaaaahhhhh!
 [03:30.137]But you may feel a little sick.
 [03:35.168]Can you stand up?
@@ -240,8 +220,8 @@ window.playlist = {
             id: '4235820',
             name: 'Time',
             artist: 'Pink Floyd',
-            album: 'The Dark Side of the Moon',
-            cover: 'http://p1.music.126.net/5sDLKpZW98XER9uuQrOHOw==/109951172026793754.jpg?param=300x300',
+            album: 'The Wall',
+            cover: 'http://p2.music.126.net/5sDLKpZW98XER9uuQrOHOw==/109951172026793754.jpg?param=300x300',
             url: 'http://music.163.com/song/media/outer/url?id=4235820.mp3',
             lyrics: `[00:00.00] 作词 : Roger Waters
 [00:00.00] 作曲 : David Gilmour/Nick Mason/Roger Waters/Richard Wright
@@ -299,73 +279,104 @@ window.playlist = {
 [04:28.31]Together we stand, divided we fall.`
         },
         {
-            id: '33394057',
-            name: 'Fearless',
+            id: '26789046',
+            name: 'Lost For Words',
             artist: 'Pink Floyd',
-            album: 'Meddle',
-            cover: 'http://p1.music.126.net/ZmVlJYtotvxFJ7CfhEZTeQ==/7840617418744160.jpg?param=300x300',
-            url: 'http://music.163.com/song/media/outer/url?id=33394057.mp3',
-            lyrics: `[00:00.00] 作词 : Pink Floyd
-[00:01.00] 作曲 : Pink Floyd
-[00:44.30]You say the hill's too steep to climb
-[00:51.41]Climb it
-[00:57.77]You say you'd like to see me try
-[01:04.74]Climbing
-[01:11.05]You pick the place and I'll choose the time
-[01:16.71]And I'll climb
-[01:19.43]That hill in my own way
-[01:24.73]Just wait a while for the right day
-[01:32.11]And as I rise above the tree lines and the clouds
-[01:37.81]I look down hearing the sound of the things you've said today
-[01:46.64]
-[02:47.30]Fearlessly the idiot faced the crowd
-[02:54.81]Smiling
-[03:00.83]Merciless the magistrate turns around
-[03:08.46]Frowning
-[03:14.68]And who's the fool who wears the crown
-[03:20.69]And go down
-[03:23.39]In your own way
-[03:28.80]And every day is the right day
-[03:36.09]And as you rise above the fear-lines in his brow
-[03:41.87]You look down hearing the sound of the faces in the crowd`
+            album: 'The Division Bell',
+            cover: 'http://p2.music.126.net/RIDL2YnaNzgRMM_63b3GoA==/5992338371896020.jpg?param=300x300',
+            url: 'http://music.163.com/song/media/outer/url?id=26789046.mp3',
+            lyrics: `[01:28.58]I was spending my time in the doldrums
+[01:33.47]I was caught in the cauldron of hate
+[01:38.40]I felt persecuted and paralyzed
+[01:43.10]I thought that everything else would just wait
+[01:50.77]While you are wasting your time on your enemies
+[01:56.18]Engulfed in a fever of spite
+[02:01.27]Beyond your tunnel vision reality fades
+[02:09.60]Like shadows into the night
+[02:17.68]To martyr yourself to caution
+[02:22.60]Is not going to help at all
+[02:27.15]Because there'll be no safety in numbers
+[02:31.74]When the Right One walks out of the door
+[02:37.24]
+[03:19.35]Can you see your days blighted by darkness?
+[03:24.55]Is it true you beat your fists on the floor?
+[03:30.21]Stuck in a world of isolation
+[03:34.25]While the ivy grows over the door
+[03:41.98]So I open my door to my enemies
+[03:47.49]And I ask could we wipe the slate clean
+[03:52.33]But they tell me to please go **** myself
+[03:57.62]You know you just can't win
+[04:02.56]
+[04:54.50]`
         },
         {
-            id: '4235817',
-            name: 'Wish You Were Here',
+            id: '4237525',
+            name: 'Another Brick in the Wall, Pt. 2',
             artist: 'Pink Floyd',
-            album: 'Wish You Were Here',
-            cover: 'http://p1.music.126.net/5sDLKpZW98XER9uuQrOHOw==/109951172026793754.jpg?param=300x300',
-            url: 'http://music.163.com/song/media/outer/url?id=4235817.mp3',
-            lyrics: `[00:00.000] 作词 : Roger Waters
-[00:01.000] 作曲 : David Gilmour/Roger Waters
-[01:35.434]So, so you think you can tell
-[01:41.933]Heaven from Hell
-[01:45.694]Blue skies from pain
-[01:50.182]Can you tell a green field from a cold steel rail?
-[01:58.682]A smile from a veil?
-[02:02.676]Do you think you can tell?
-[02:07.179]And did they get you to trade
-[02:10.934]Your heroes for ghosts?
-[02:15.180]Hot ashes for trees?
-[02:19.173]Hot air for a cool breeze?
-[02:22.932]Cold comfort for change?
-[02:27.184]And did you exchange
-[02:30.427]A walk on part in the war
-[02:34.186]For a lead role in a cage?
-[03:16.690]How I wish, how I Wish You Were Here
-[03:23.181]We're just two lost souls swimming in a fish bowl
-[03:28.441]Year after year
-[03:32.932]Running over the same old ground
-[03:36.681]What have we found?
-[03:38.932]The same old fears
-[03:42.435]Wish You Were Here`
+            album: 'The Wall',
+            cover: 'http://p2.music.126.net/ZQt2NIXq6huxEQI9UV0ttw==/109951172026790805.jpg?param=300x300',
+            url: 'http://music.163.com/song/media/outer/url?id=4237525.mp3',
+            lyrics: `[00:00.00] 作词 : Roger Waters
+[00:01.00] 作曲 : Roger Waters
+[00:09.71]We don't need no education
+[00:18.82]We dont need no thought control
+[00:24.81]
+[00:28.18]No dark sarcasm in the classroom
+[00:33.48]
+[00:37.11]Teachers leave them kids alone
+[00:42.53]
+[00:47.78]Hey Teachers Leave them kids alone
+[00:53.28]
+[00:56.34]All in all it's just another brick in the wall
+[01:01.40]
+[01:04.83]All in all you're just another brick in the wall
+[01:10.88]
+[01:14.50]We don't need no education
+[01:18.57]
+[01:23.31]We dont need no thought control
+[01:27.75]
+[01:32.36]No dark sarcasm in the classroom
+[01:36.98]
+[01:41.66]Teachers leave them kids alone
+[01:46.40]
+[01:52.20]Hey Teachers Leave them kids alone
+[01:56.63]
+[02:00.95]All in all it's just another brick in the wall
+[02:09.80]All in all you're just another brick in the wall`
+        }
+    ],
+    B: [
+        {
+            id: '2046846879',
+            name: 'If (Original)',
+            artist: 'Pink Floyd',
+            album: 'Atom Heart Mother',
+            cover: 'http://p2.music.126.net/ksBGHdiA9aql-cLOfwHtSg==/109951168607363976.jpg?param=300x300',
+            url: 'http://music.163.com/song/media/outer/url?id=2046846879.mp3',
+            lyrics: `[00:00.000] 作词 : David Gilmour
+[00:01.000] 作曲 : David Gilmour
+[00:09.470]If I were a swan, I'd be gone
+[00:18.926]If I were a train, I'd be late
+[00:28.252]And if I were a good man, I'd talk with you more often than I do
+[00:47.112]If I were to sleep, I could dream
+[00:56.569]If I were afraid, I could hide
+[01:05.894]If I go insane, please don't put your wires in my brain
+[02:02.058]If I were the moon, I'd be cool
+[02:11.122]If I were a rule, I would bend
+[02:20.422]If I were a good man, I'd understand the spaces between friends
+[02:39.204]If I were alone, I would cry
+[02:48.059]And if I were with you, I'd be home and dry
+[02:57.568]And if I go insane, will you still let me join in with the game?
+[03:53.470]If I were a swan, I'd be gone
+[04:02.743]If I were a train, I'd be late again
+[04:12.043]If I were a good man, I'd talk with you more often than I do`
         },
         {
             id: '4238610',
             name: 'Chapter 24',
             artist: 'Pink Floyd',
             album: 'The Piper at the Gates of Dawn',
-            cover: 'http://p1.music.126.net/RpwfPVhBM1Bc9HcJ4NnieA==/109951172027023882.jpg?param=300x300',
+            cover: 'http://p2.music.126.net/RpwfPVhBM1Bc9HcJ4NnieA==/109951172027023882.jpg?param=300x300',
             url: 'http://music.163.com/song/media/outer/url?id=4238610.mp3',
             lyrics: `[00:00.00] 作词 : Syd Barrett
 [00:00.95] 作曲 : Syd Barrett
@@ -400,147 +411,59 @@ window.playlist = {
 [03:13.30]Sunrise`
         },
         {
-            id: '18309364',
-            name: 'Pigs (Three Different Ones)',
-            artist: 'Pink Floyd',
-            album: 'Animals',
-            cover: 'http://p1.music.126.net/s9fGgcK4Gz3-9h8dpvNSwA==/2536573325526444.jpg?param=300x300',
-            url: 'http://music.163.com/song/media/outer/url?id=18309364.mp3',
-            lyrics: `[00:00.000] 作词 : Roger Waters
-[00:01.000] 作曲 : Roger Waters
-[01:08.650]Big man pig man ha ha charade you are
-[01:16.890]
-[01:27.000]You well heeled big wheel ha ha charade you are
-[01:42.240]And when your hand is on your heart
-[01:50.050]You're nearly a good laugh
-[01:53.620]Almost a joker
-[01:56.520]With your head down in the pig bin
-[01:59.970]Saying keep on digging
-[02:04.860]Pig stain on your fat chin
-[02:08.330]What do you hope to find
-[02:12.690]When you're down in the pig mine
-[02:15.950]You're nearly a laugh
-[02:19.700]You're nearly a laugh
-[02:21.550]But you're really a cry
-[02:28.000]
-[02:44.980]Bus stop rat bag ha ha charade you are
-[02:52.260]
-[03:02.560]You ****** up old hag ha ha charade you are
-[03:17.930]You radiate cold shafts of broken glass
-[03:26.200]You're nearly a good laugh
-[03:29.640]Almost worth a quick grin
-[03:33.140]You like the feel of steel
-[03:36.750]You're hot stuff with a hat pin
-[03:40.500]And good fun with a hand gun
-[03:44.270]You're nearly a laugh
-[03:48.000]You're nearly a laugh
-[03:49.740]But you're really a cry
-[03:55.820]
-[08:08.750]Hey you Whitehouse ha ha charade you are
-[08:16.360]
-[08:26.600]You house proud town mouse ha ha charade you are
-[08:41.730]You're trying to keep our feelings off the street
-[08:49.530]You're nearly a real treat
-[08:52.970]All tight lips and cold feet
-[08:56.380]And do you feel abused
-[09:02.990]You gotta stem the evil tide
-[09:07.260]And keep it all on the inside
-[09:10.430]Mary you're nearly a treat
-[09:14.110]Mary you're nearly a treat
-[09:16.380]But you're really a cry
-[09:21.600]`
-        },
-        {
-            id: '18309769',
-            name: 'Brain Damage',
+            id: '2116278123',
+            name: 'The Great Gig In The Sky',
             artist: 'Pink Floyd',
             album: 'The Dark Side of the Moon',
-            cover: 'http://p1.music.126.net/06AEb-q2iWrhS4zg_b51yA==/2537672837122343.jpg?param=300x300',
-            url: 'http://music.163.com/song/media/outer/url?id=18309769.mp3',
-            lyrics: `[00:00.00] 作词 : Roger Waters
-[00:01.00] 作曲 : Roger Waters
-[00:14.37]The lunatic is on the grass
-[00:19.66]
-[00:22.51]The lunatic is on the grass
-[00:26.55]
-[00:28.47]Remembering games and daisy chains and laughs
-[00:35.71]
-[00:36.58]Got to keep the loonies on the path
-[00:42.66]
-[00:44.40]The lunatic is in the hall
-[00:48.64]
-[00:49.76]The lunatics are in my hall
-[00:55.64]
-[00:57.43]The paper holds their folded faces to the floor
-[01:05.52]
-[01:05.93]And every day the paper boy brings more
-[01:13.68]
-[01:14.48]And if the dam breaks open many years too soon
-[01:22.14]
-[01:23.08]And if there is no room upon the hill
-[01:26.93]
-[01:27.49]And if your head explodes with dark forbodings too
-[01:35.88]
-[01:36.81]I'll see you on the dark side of the moon
-[01:41.86]
-[01:48.46]The lunatic is in my head
-[01:54.12]
-[01:54.68]The lunatic is in my head
-[02:00.02]
-[02:01.78]You raise the blade, you make the change
-[02:09.72]
-[02:10.23]You re-arrange me 'till I'm sane
-[02:14.56]
-[02:17.77]You lock the door
-[02:21.16]
-[02:21.69]And throw away the key
-[02:22.54]
-[02:23.61]There's someone in my head but it's not me.
-[02:29.09]
-[02:31.09]And if the cloud bursts, thunder in your ear
-[02:40.25]
-[02:40.55]You shout and no one seems to hear
-[02:45.17]
-[02:45.64]And if the band you're in starts playing different tunes
-[02:54.38]
-[02:54.90]I'll see you on the dark side of the moon`
+            cover: 'http://p2.music.126.net/Edu0dmt60Y8-r7YJ8Fw8yA==/109951172697324572.jpg?param=300x300',
+            url: 'http://music.163.com/song/media/outer/url?id=2116278123.mp3',
+            lyrics: `[00:00.00] 作词 : Richard Wright/Clare Torry
+[00:01.00] 作曲 : Richard Wright/Clare Torry
+[00:03.74]Music：Wright
+[00:05.12]Vocal：Clare Torry
+[00:38.96]
+[00:39.15]'And I am not frightened of dying, any time will do,
+[00:42.74]I don't mind. Why should I be frightened of dying?
+[00:49.68]There's no reason for it, you've gotta go sometime.'
+[03:30.54]
+[03:33.88]'I never said I was frightened of dying.'`
         },
         {
-            id: '4238606',
-            name: 'The Gnome',
+            id: '31738245',
+            name: 'The Dark Side of the Moon',
             artist: 'Pink Floyd',
-            album: 'The Piper at the Gates of Dawn',
-            cover: 'http://p1.music.126.net/RpwfPVhBM1Bc9HcJ4NnieA==/109951172027023882.jpg?param=300x300',
-            url: 'http://music.163.com/song/media/outer/url?id=4238606.mp3',
-            lyrics: `[00:00.00] 作词 : Syd Barrett
-[00:01.00] 作曲 : Syd Barrett
-[00:04.40]I want to tell you a story
-[00:08.31]About a little man
-[00:11.00]If I can A gnome named
-[00:13.87]Grimble Grumble
-[00:16.76]And little gnomes stay in their home
-[00:21.06]Eating,Sleeping,
-[00:25.17]Drinking their wine
-[00:31.22]He wore a scarlet tunic,
-[00:35.29]A blue green hood,
-[00:37.40]It looked quite good
-[00:39.54]He had a big adventure
-[00:43.50]Admist the grass
-[00:45.48]Fresh air at last
-[00:47.66]Wining,Dining,biding his time
-[00:57.76]And then one day-
-[01:00.69]Hooray!Another way for gnomes to say hoooooray!
-[01:14.51]Look at the sky, look at the river
-[01:18.94]Isn't it good?
-[01:22.83]Look at the sky, look at the river
-[01:27.10]Isn't it good?
-[01:31.14]Winding, Finding places to go
-[01:41.27]And then one day-
-[01:44.17]Hooray!Another way for gnomes to say hoooooooooooooray
-[01:58.10]Hooooooooooooray!`
-        }
-    ],
-    B: [
+            album: 'The Dark Side of the Moon',
+            cover: 'http://p2.music.126.net/QeEqfYkapGTGgdoM1MV7Nw==/109951172402348987.jpg?param=300x300',
+            url: 'http://music.163.com/song/media/outer/url?id=31738245.mp3',
+            lyrics: `[00:00.00] 作词 : Roger Waters
+[00:00.00] 作曲 : Roger Waters/David Gilmour/Richard Wright/Nick Mason
+[00:00.00]The Dark Side of the Moon
+[00:27.00]
+[00:30.00]Speak To Me
+[00:33.00](Instrumental)
+[01:08.00]
+[01:11.00]Breathe
+[01:14.00]
+[02:26.70]Breathe，breathe in the air
+[02:34.28]Don't be afraid to care
+[02:41.76]Leave，but don't leave me
+[02:48.00]Look around choose your own ground
+[02:55.76]For long you live and high you fly
+[02:59.57]And smiles you'll give and tears you'll cry
+[03:03.25]And all you touch and all you see
+[03:06.95]Is all your life will ever be
+[03:11.15]Run rabbit run
+[03:18.24]Dig that hole forget the sun
+[03:25.80]And when at last the work is done
+[03:32.34]Don't sit down it's time to dig another one
+[03:40.10]For long you live and high you fly
+[03:43.68]But only if you ride the tide
+[03:47.44]And balanced on the biggest wave
+[03:51.06]You race towards an early grave
+[03:55.27]
+[03:58.27]On The Run
+[04:01.27]`
+        },
         {
             id: '33394060',
             name: 'Echoes',
@@ -584,413 +507,53 @@ window.playlist = {
 [19:52.02]And call to you across the sky`
         },
         {
-            id: '4237914',
-            name: 'Welcome to the Machine',
-            artist: 'Pink Floyd',
-            album: 'Wish You Were Here',
-            cover: 'http://p1.music.126.net/YNiXGF64S5GPWQteqILYXQ==/109951172027020970.jpg?param=300x300',
-            url: 'http://music.163.com/song/media/outer/url?id=4237914.mp3',
-            lyrics: `[00:00.000] 作词 : Roger Waters
-[00:01.000] 作曲 : Roger Waters
-[01:03.769]Welcome my son, welcome to the machine.
-[01:18.189]Where have you been?
-[01:21.750]It's alright we know where you've been.
-[01:32.189]You've been in the pipeline, filling in time,
-[01:39.310]Provided with toys and 'Scouting for Boys'.
-[01:46.628]You bought a guitar to punish your ma,
-[01:53.820]And you didn't like school, and you
-[01:57.800]know you're nobody's fool,
-[02:05.700]So welcome to the machine.
-[03:58.259]Welcome my son, welcome to the machine.
-[04:09.388]
-[04:14.289]What did you dream?
-[04:16.156]It's alright we told you what to dream.
-[04:27.399]You dreamed of a big star,
-[04:33.779]He played a mean guitar,
-[04:40.799]He always ate in the Steak Bar.
-[04:47.717]He loved to drive in his Jaguar.
-[04:49.779]
-[04:54.990]So welcome to the Machine.`
-        },
-        {
-            id: '3388954600',
-            name: 'Money',
-            artist: 'Pink Floyd',
-            album: 'The Dark Side of the Moon',
-            cover: 'http://p2.music.126.net/k0aNDKAo4Cj5y6aCdYqQQg==/109951173316977121.jpg?param=300x300',
-            url: 'http://music.163.com/song/media/outer/url?id=3388954600.mp3',
-            lyrics: `[00:00.000] 作曲 : Roger Waters
-[00:40.380]Money, a get away
-[00:46.444]Go get a good job with more pay and you're okay
-[00:53.877]Money, it's a gas
-[01:00.256]Grab that cash with both hands and make a stash
-[01:07.698]A new car, caviar, four-star daydream
-[01:11.901]Think I'll buy me a football team
-[01:16.163]
-[01:21.435]Money, we'll get back
-[01:27.433]I'm all right, Jack, keep your hands off of my stack
-[01:34.752]Money, it's a hit
-[01:40.777]Don't give me that do-goody-good bullshit
-[01:47.051]I'm in the hi-fidelity first class traveling set
-[01:52.599]And I think I need a Lear jet
-[01:56.364]
-[05:10.940]Money, it's a crime
-[05:16.971]Share it fairly, but don't take a slice of my pie
-[05:23.998]Money, so they say
-[05:29.735]Is the root of all evil today
-[05:37.280]But if you ask for a rise, it's no surprise that they're giving none away
-[05:45.311]Away, away, away, away, away, away, away`
-        },
-        {
-            id: '4237911',
-            name: 'Shine On You Crazy Diamond (Pts. 1-5)',
-            artist: 'Pink Floyd',
-            album: 'Wish You Were Here',
-            cover: 'http://p1.music.126.net/YNiXGF64S5GPWQteqILYXQ==/109951172027020970.jpg?param=300x300',
-            url: 'http://music.163.com/song/media/outer/url?id=4237911.mp3',
-            lyrics: `[00:00.000] 作词 : David Gilmour/Roger Waters
-[00:01.000] 作曲 : David Gilmour/Roger Waters/Richard Wright
-[00:02.400](Instrumental Music)
-[08:41.520]Remember when you were young,
-[08:46.950]You shone like the sun.
-[08:51.351]Shine on you crazy diamond.
-[09:02.041]Now there's a look in your eyes,
-[09:07.942]Like black holes in the sky.
-[09:12.758]Shine on you crazy diamond.
-[09:22.399]You were caught in the cross fire of childhood and stardom,
-[09:28.250]Blown on the steel breeze.
-[09:33.871]Come on you target for faraway laughter,
-[09:39.008]Come on you stranger, you legend, you martyr, and shine!
-[09:50.700]
-[10:05.371]You reached for the secret too soon,
-[10:11.849]You cried for the moon.
-[10:15.770]Shine on you crazy diamond.
-[10:26.200]Threatened by shadows at night,
-[10:32.399]And exposed in the light.
-[10:36.650]Shine on you crazy diamond.
-[10:46.250]Well you wore out your welcome with random precision,
-[10:52.140]Rode on the steel breeze.
-[10:57.628]Come on you raver, you seer of visions,
-[11:02.671]Come on you painter, you piper, you prisoner, and shine!`
-        },
-        {
-            id: '4237927',
-            name: 'Shine On You Crazy Diamond (Pts. 6-9)',
-            artist: 'Pink Floyd',
-            album: 'Wish You Were Here',
-            cover: 'http://p1.music.126.net/YNiXGF64S5GPWQteqILYXQ==/109951172027020970.jpg?param=300x300',
-            url: 'http://music.163.com/song/media/outer/url?id=4237927.mp3',
-            lyrics: `[00:00.000] 作词 : Roger Waters
-[00:01.000] 作曲 : David Gilmour/Roger Waters/Richard Wright
-[04:59.697]Nobody knows where you are, how near or how far.
-[05:09.896]Shine on you crazy diamond.
-[05:20.276]Pile on many more layers and I'll be joining you there.
-[05:30.476]Shine on you crazy diamond.
-[05:40.226]And we'll bask in the shadow of yesterday's triumph,
-[05:46.266]sail on the steel breeze.
-[05:51.836]Come on you boy child, you winner and loser,
-[05:56.608]come on you miner for truth and delusion, and shine`
-        },
-        {
-            id: '4236412',
-            name: 'The Great Gig In The Sky',
-            artist: 'Pink Floyd',
-            album: 'The Dark Side of the Moon',
-            cover: 'http://p1.music.126.net/snMfT2THbbI0SRIoCwyeVQ==/109951165545616251.jpg?param=300x300',
-            url: 'http://music.163.com/song/media/outer/url?id=4236412.mp3',
-            lyrics: `[00:39.76]And I am not frightened of dying
-[00:42.27]Any time will do, I don't mind
-[00:47.42]Why should I be frightened of dying?
-[00:50.30]There's no reason for it, you've gotta go sometime
-[03:34.84]I never said I was afraid of dying`
-        },
-        {
-            id: '3388954942',
-            name: "Wot's...Uh the Deal",
-            artist: 'Pink Floyd',
-            album: 'Obscured by Clouds',
-            cover: 'http://p1.music.126.net/k0aNDKAo4Cj5y6aCdYqQQg==/109951173316977121.jpg?param=300x300',
-            url: 'http://music.163.com/song/media/outer/url?id=3388954942.mp3',
-            lyrics: `[00:00.000] 作曲 : Roger Waters/David Gilmour
-[00:22.143]Heaven sent the promised land,
-[00:27.410]Looks alright from where I stand,
-[00:32.950]'Cause I'm the man on the outside looking in,
-[00:44.003]Waiting on the first step,
-[00:49.536]Show me where the key is kept,
-[00:55.077]Point me down the right line because it's time,
-[01:05.387]To let me in from the cold,
-[01:10.422]Turn my lead into gold,
-[01:16.196]'Cause there's a chill wind blowing in my soul,
-[01:21.267]And I think I'm growing old,
-[01:28.325]Flash the readies,
-[01:31.673]Wot's... uh the deal?
-[01:34.182]Got to make it to the next meal,
-[01:39.451]Try to keep up with the turnin' of the wheel,
-[01:50.970]Mile after mile (Mile after mile),
-[01:53.480]Stone after stone (Stone after stone),
-[01:55.747]Turn to speak but you're alone
-[02:01.321]Million miles from home, you're on your own,
-[02:11.607]So let me in from the cold,
-[02:16.127]Turn my lead into gold,
-[02:21.643]'Cause there's a chill wind blowing in my soul,
-[02:26.971]And I think I'm growing old,
-[03:38.873]Fire bright by candlelight,
-[03:43.638]And her by my side,
-[03:49.160]And if she prefers we need never stir again,
-[03:59.703]Someone sent the promised land,
-[04:05.448]And I grabbed it with both hands,
-[04:10.216]Now, I'm the man on the inside looking out,
-[04:20.288]Hear me shout, "Come on in!"
-[04:24.805]"What's the news and where ya been?",
-[04:30.607]'Cause there's no wind left in my soul,
-[04:34.900]And I've grown old.`
-        },
-        {
-            id: '22509738',
-            name: 'Here I Go',
-            artist: 'Syd Barrett',
-            album: 'The Best of Syd Barrett',
-            cover: 'http://p1.music.126.net/EvBUaZh0P_KmNjQbLalgRg==/109951165975313432.jpg?param=300x300',
-            url: 'http://music.163.com/song/media/outer/url?id=22509738.mp3',
-            lyrics: `[00:00.00] 作词 : Syd Barrett
-[00:00.38] 作曲 : Syd Barrett
-[00:00.77]This is a story about a girl that I knew
-[00:05.19]She didn't like my songs
-[00:07.21]And that made me feel blue
-[00:08.94]She said: "a big band is far better than you"...
-[00:14.77]She don't rock and roll, she don't like it
-[00:19.01]She don't do the stroll, well she don't do it right
-[00:22.87]Well, everything's wrong and my patience was gone
-[00:26.51]When I woke one morning
-[00:28.59]And remembered this song
-[00:30.20]Oh, kinda catchy, I hoped
-[00:37.88]That she would talk to me now
-[00:39.88]And even allow me to hold her hand
-[00:43.99]And forget that old band.
-[00:46.47]I strolled around to her pad
-[00:54.03]Her light was off and that's bad
-[01:01.83]Her sister said that my girl was gone
-[01:09.41]"But come inside, boy, and play, play, play me a song!"
-[01:16.12]I said"Yeah! Here I go"
-[01:20.71]She's kinda cute; don't you know,
-[01:23.65]That after a while of seeing her smile
-[01:27.61]I knew we could make it, make it in style
-[02:01.28]So now I've got all I need
-[02:09.29]She and I are in love, we've agreed
-[02:16.41]She likes this song and my others too
-[02:24.39]So now you see my world is...
-[02:30.90]Because of this tune!
-[02:33.39]What a boon this tune!
-[02:36.66]I tell you soon
-[02:37.97]We'll be lying in bed, happily wed,
-[02:41.95]And I won't think of that girl
-[02:44.26]Or what she said...`
-        },
-        {
-            id: '481535699',
-            name: 'Wait For Her',
+            id: '481537684',
+            name: 'Is This The Life We Really Want',
             artist: 'Roger Waters',
             album: 'Is This The Life We Really Want',
-            cover: 'http://p1.music.126.net/INqjv0PelFHmm_CUYZCbyw==/109951165981533183.jpg?param=300x300',
-            url: 'http://music.163.com/song/media/outer/url?id=481535699.mp3',
-            lyrics: `[00:29.88]Will a glass inlaid with gemstones on a pool around the evening
-[00:37.36]Among the perfumed roses wait for her
-[00:44.86]With the patience of a pack horse loaded for the mountains
-[00:52.24]Like a stoic noble prince wait for her
-[00:59.11]With seven pillows laid out on the stair
-[01:03.81]The scent of
-[01:05.48]Incense fills the air
-[01:09.43]Be calm and wait for her
-[01:15.04]And do not flush the sparrows that are nesting in her braids
-[01:22.34]All along the barricades wait for her
-[01:31.85]And if she comes soon wait for her
-[01:46.89]And if she comes late wait
-[02:00.77]Let her be still as a summer afternoon
-[02:07.56]A garden in full bloom
-[02:14.34]Let her breathe in the air that is foreign to her heart
-[02:23.21]Let her lips part wait for her
-[02:30.20]Take her to the balcony see the moon soaked in milk
-[02:37.30]Hear the rustle of her silk wait for her
-[02:45.02]Don't let your eyes alight upon the twin doves of her breast
-[02:53.12]Lest they take flight
-[02:55.69]Wait for her
-[03:02.01]And if she comes soon wait for her
-[03:16.90]And if she comes late wait wait
-[03:29.28]Serve her water before wine
-[03:34.00]Do not touch her hand
-[03:37.29]Let your fingertips rest at her command
-[03:44.66]Speak softly as a flute would to a fearful violin
-[03:52.18]Breathe out breathe in
-[04:30.09]And as the echo fades from her final fusillade
-[04:37.62]Remember the promises you made`
-        },
-        {
-            id: '31738245',
-            name: 'The Dark Side of the Moon',
-            artist: 'Pink Floyd',
-            album: 'The Dark Side of the Moon',
-            cover: 'http://p1.music.126.net/QeEqfYkapGTGgdoM1MV7Nw==/109951172402348987.jpg?param=300x300',
-            url: 'http://music.163.com/song/media/outer/url?id=31738245.mp3',
-            lyrics: `[00:00.00] 作词 : Roger Waters
-[00:00.00] 作曲 : Roger Waters/David Gilmour/Richard Wright/Nick Mason
-[00:00.00]The Dark Side of the Moon
-[00:27.00]
-[00:30.00]Speak To Me
-[00:33.00](Instrumental)
-[01:08.00]
-[01:11.00]Breathe
-[01:14.00]
-[02:26.70]Breathe，breathe in the air
-[02:34.28]Don't be afraid to care
-[02:41.76]Leave，but don't leave me
-[02:48.00]Look around choose your own ground
-[02:55.76]For long you live and high you fly
-[02:59.57]And smiles you'll give and tears you'll cry
-[03:03.25]And all you touch and all you see
-[03:06.95]Is all your life will ever be
-[03:11.15]Run rabbit run
-[03:18.24]Dig that hole forget the sun
-[03:25.80]And when at last the work is done
-[03:32.34]Don't sit down it's time to dig another one
-[03:40.10]For long you live and high you fly
-[03:43.68]But only if you ride the tide
-[03:47.44]And balanced on the biggest wave
-[03:51.06]You race towards an early grave
-[03:55.27]
-[03:58.27]On The Run
-[04:01.27](Instrumental)
-[07:32.16]
-[07:35.16]Time
-[07:38.16]
-[09:58.71]Ticking away the moments that make up a dull day
-[10:06.03]You fritter and waste the hours in an off hand way
-[10:13.31]Kicking around on a piece of ground in your home town
-[10:20.54]Waiting for someone or something to show you the way
-[10:27.95]Tired of lying in the sunshine staying home to watch the rain
-[10:35.58]You are young and life is long and there is time to kill today
-[10:43.07]And then one day you find ten years has got behind you
-[10:51.01]No one told you when to run, you missed the starting gun
-[10:59.13]
-[12:24.79]And you run and you run to catch up with the sun, but it's sinking
-[12:32.34]And racing around to come up behind you again
-[12:39.54]The sun is the same in the relative way, but you're older
-[12:46.39]And shorter of breath and one day closer to death
-[12:53.58]Every year is getting shorter, never seem to find the time
-[13:00.81]Plans that either come to naught or half a page of scribbled lines
-[13:08.17]Hanging on in quiet desperation is the English way
-[13:15.68]The time is gone the song is over, thought I'd something more to say
-[13:24.65]
-[13:40.21]Home, home again
-[13:47.74]I like to be here when I can
-[13:56.30]When I come home cold and tired
-[14:03.27]It's good to warm my bones beside the fire
-[14:11.07]Far away, across the field
-[14:14.72]The tolling of the iron bell
-[14:19.16]Calls the faithful to their knees
-[14:22.94]To hear the softly spoken magic spell
-[14:30.19]
-[14:33.19]The Great Gig In The Sky
-[14:36.19](Instrumental)
-[19:18.06]
-[19:22.06]Money
-[19:25.06]
-[20:02.94]Money, get away
-[20:09.59]Get a good job with more pay and your OK
-[20:16.96]Money, it's a gas
-[20:23.17]Grab that cash with both hands and make a stash
-[20:30.37]New car caviar four star daydream
-[20:34.90]Think I'll buy me a football team
-[20:42.69]Money, get back
-[20:50.50]I'm all right Jack keep your hands off my stack
-[20:57.39]Money, it's a hit
-[21:03.69]Don't give me that do goody good bullshit
-[21:09.64]I'm in the hi-fidelity first class traveling set
-[21:15.41]And I think I need a Lear jet
-[21:20.17]
-[24:33.80]Money, it's a crime
-[24:39.66]Share it fairly but don't take a slice of my pie
-[24:46.61]Money, so they say
-[24:52.52]Is the root of all evil today
-[24:59.75]But if you ask for a rise it's no surprise that they're giving none away
-[25:17.30]
-[25:56.01]Us and Them
-[25:59.01]
-[27:27.58]Us and Them
-[27:41.40]And after all we're only ordinary men
-[28:01.26]Me and you
-[28:15.37]God only knows its not what we would choose to do
-[28:35.00]Forward he cried from the rear and the front rank died
-[28:47.56]And the General sat and the lines on the map moved from side to side
-[29:00.80]Black and Blue
-[29:14.60]And who knows which is which and who is who
-[29:34.22]Up and Down
-[29:47.90]And in the end its only round and round and round
-[30:06.84]Havent you heard its a battle of words the poster bearer cried
-[30:19.65]Listen son, said the man with the gun theres room for you inside
-[30:32.75]
-[32:03.49]Down and Out
-[32:17.27]It cant be helped but theres a lot of it about
-[32:37.12]With, without
-[32:51.08]And who'll deny, it's what the fightings' all about
-[33:09.45]Get out of the way, its a busy day and I've got things on my mind
-[33:22.04]For want of the price of tea and a slice the old man died
-[33:33.15]
-[33:35.15]Any Colour You Like
-[33:38.15](Instrumental)
-[36:57.93]
-[37:00.93]Brain Damage
-[37:03.93]
-[37:15.11]The lunatic is on the grass
-[37:23.07]The lunatic is on the grass
-[37:30.32]Remembering games and daisy chains and laughs
-[37:37.08]Got to keep the loonies on the path
-[37:44.71]The lunatic is in the hall
-[37:51.62]The lunatics are in my hall
-[37:59.02]The paper holds their folded faces to the floor
-[38:06.13]And every day the paper boy brings more
-[38:16.55]And if the dam breaks open many years too soon
-[38:23.25]And if there is no room upon the hill
-[38:30.71]And if your head explodes with dark forebodings too
-[38:37.61]I'll see you on the dark side of the moon
-[38:48.71]The lunatic is in my head
-[38:56.01]The lunatic is in my head
-[39:03.07]You raise the blade, you make the change
-[39:10.54]You re-arrange me 'till I'm sane
-[39:17.60]You lock the door
-[39:20.56]And throw away the key
-[39:24.36]There's someone in my head but it's not me.
-[39:35.18]And if the cloud bursts, thunder in your ear
-[39:42.53]You shout and no one seems to hear
-[39:49.06]And if the band you're in starts playing different tunes
-[39:56.34]I'll see you on the dark side of the moon
-[40:02.49]
-[40:50.75]Eclipse
-[40:53.75]
-[41:01.72]All that you touch
-[41:04.10]All that you see
-[41:06.96]All that you taste
-[41:09.43]All you feel
-[41:12.56]All that you love
-[41:14.85]All that you hate
-[41:17.58]All you distrust
-[41:20.41]All you save
-[41:22.88]All that you give
-[41:25.22]All that you deal
-[41:28.06]All that you buy
-[41:30.42]Beg, borrow or steal
-[41:33.33]All you create
-[41:35.58]All you destroy
-[41:38.54]All that you do
-[41:40.95]All that you say
-[41:43.86]All that you eat
-[41:46.43]Everyone you meet
-[41:48.89]All that you slight
-[41:51.60]everyone you fight
-[41:54.21]All that is now
-[41:56.53]All that is gone
-[41:59.16]All that's to come
-[42:01.61]And everything under the sun is in tune
-[42:06.81]But the sun is eclipsed by the moon.`
+            cover: 'http://p2.music.126.net/INqjv0PelFHmm_CUYZCbyw==/109951165981533183.jpg?param=300x300',
+            url: 'http://music.163.com/song/media/outer/url?id=481537684.mp3',
+            lyrics: `[00:00.000]Donald Trump:You're CNN. I mean it's story, after story, after story is bad. I won. I won. And the other thing, chaos. There's zero chaos. We are running- This is a fine-tuned machine
+[01:14.490]The goose has gotten fat
+[01:22.390]On caviar and fancy bars
+[01:29.490]And subprime homes
+[01:32.390]And broken homes
+[01:35.490]Is this the life, the holy grail?
+[01:48.190]It's not enough that we succeed
+[01:54.190]We still need others to fail
+[02:02.100]Fear, fear drives the mills of modern man
+[02:10.100]Fear keeps us all in line
+[02:20.100]Fear of all those foreigners
+[02:27.100]Is this the life we really want?
+[02:40.100]It surely must be so
+[02:46.390]For this is a democracy and what we all say goes
+[03:18.290]And every time a student is run over by a tank
+[03:25.100]And every time a pirate's dog is forced to walk the plank
+[03:31.290]Every time a Russian bride is advertised for sale
+[03:37.290]And every time a journalist is left to rot in jail
+[03:44.290]Every time a young girl's life is casually spent
+[03:51.290]And every time a nincompoop becomes the president
+[03:57.290]Every time somebody dies reaching for their keys
+[04:04.190]And every time the green land falls in the ******* sea is because
+[04:10.190]All of us, the blacks and whites
+[04:13.190]Chicanos, Asians, every type of ethnic group.Even folks from Guadeloupe, the old, the young
+[04:23.190]Toothless hags, super models, actors, fags, bleeding hearts
+[04:30.190]Football stars, men in bars, washerwomen, tailors, tarts
+[04:36.190]Grandmas, grandpas, uncles, aunts
+[04:39.190]Friends, relations, homeless tramps
+[04:42.190]Clerics, truckers, cleaning ladies
+[04:49.190]Ants – maybe not ants
+[04:52.190]Why not ants?
+[04:53.190]Well because its true
+[04:55.390]The ants don't have enough IQ to differentiate between
+[05:01.390]The pain that other people feel and well, for instance, cutting leaves
+[05:09.390]Or crawling across window seals in search of open treacle tins
+[05:14.390]So, like the ants, are we just dumb
+[05:17.390]Is that why we don't feel or see?
+[05:21.390]Or are we all just numbed out on reality TV
+[05:27.390]So, every time the curtain falls
+[05:41.190]Every time the curtain falls on some forgotten life
+[05:47.390]It is because we all stood by, silent and indifferent`
         }
     ]
 };
@@ -1109,40 +672,6 @@ function bindEventListeners() {
     });
 }
 
-// 统一同步播放状态到所有UI组件
-function syncPlayState(playing) {
-    isPlaying = playing;
-    
-    // 同步主播放器图标
-    if (playIcon) playIcon.style.display = playing ? 'none' : 'block';
-    if (pauseIcon) pauseIcon.style.display = playing ? 'block' : 'none';
-    
-    // 同步底部悬浮播放器图标
-    const miniPlayBtn = document.getElementById('mini-play-btn');
-    if (miniPlayBtn) {
-        const miniPlayIcon = miniPlayBtn.querySelector('.mini-play-icon');
-        const miniPauseIcon = miniPlayBtn.querySelector('.mini-pause-icon');
-        if (miniPlayIcon) miniPlayIcon.style.display = playing ? 'none' : 'block';
-        if (miniPauseIcon) miniPauseIcon.style.display = playing ? 'block' : 'none';
-    }
-    
-    // 同步磁带齿轮动画
-    if (playing) {
-        if (leftGear) leftGear.classList.add('spinning');
-        if (rightGear) rightGear.classList.add('spinning');
-    } else {
-        if (leftGear) leftGear.classList.remove('spinning');
-        if (rightGear) rightGear.classList.remove('spinning');
-    }
-    
-    // 同步PlayerStore状态
-    if (typeof PlayerStore !== 'undefined') {
-        PlayerStore.setState({ isPlaying: playing });
-    }
-    
-    console.log('[状态同步] 播放状态:', playing ? '播放中' : '已暂停');
-}
-
 // 格式化时间
 function formatTime(seconds) {
     const mins = Math.floor(seconds / 60);
@@ -1164,12 +693,45 @@ function showTooltip(message) {
 // 播放/暂停
 function togglePlay() {
     try {
+        console.log('togglePlay called, isPlaying:', isPlaying);
         if (isPlaying) {
             audio.pause();
-            syncPlayState(false);
+            isPlaying = false;
+            playIcon.style.display = 'block';
+            pauseIcon.style.display = 'none';
+            leftGear.classList.remove('spinning');
+            rightGear.classList.remove('spinning');
+            
+            // 更新底部悬浮播放器图标
+            const miniPlayIcon = document.getElementById('mini-play-icon');
+            const miniPauseIcon = document.getElementById('mini-pause-icon');
+            console.log('暂停 - miniPlayIcon:', miniPlayIcon, 'miniPauseIcon:', miniPauseIcon);
+            if (miniPlayIcon) miniPlayIcon.style.display = 'block';
+            if (miniPauseIcon) miniPauseIcon.style.display = 'none';
+            
+            // 更新PlayerStore状态
+            if (typeof PlayerStore !== 'undefined') {
+                PlayerStore.setState({ isPlaying: false });
+            }
         } else {
             audio.play().then(() => {
-                syncPlayState(true);
+                isPlaying = true;
+                playIcon.style.display = 'none';
+                pauseIcon.style.display = 'block';
+                leftGear.classList.add('spinning');
+                rightGear.classList.add('spinning');
+                
+                // 更新底部悬浮播放器图标
+                const miniPlayIcon = document.getElementById('mini-play-icon');
+                const miniPauseIcon = document.getElementById('mini-pause-icon');
+                console.log('播放 - miniPlayIcon:', miniPlayIcon, 'miniPauseIcon:', miniPauseIcon);
+                if (miniPlayIcon) miniPlayIcon.style.display = 'none';
+                if (miniPauseIcon) miniPauseIcon.style.display = 'block';
+                
+                // 更新PlayerStore状态
+                if (typeof PlayerStore !== 'undefined') {
+                    PlayerStore.setState({ isPlaying: true });
+                }
             }).catch(err => {
                 Logger.error('播放失败:', err);
                 showTooltip('音频加载失败，请检查网络连接');
@@ -1217,22 +779,10 @@ function updateProgress() {
                 progressIndicator.style.display = 'block';
             }
             
-            // 更新底部悬浮播放栏的进度环
-            const miniProgressBar = document.getElementById('mini-progress-bar');
-            if (miniProgressBar) {
-                // 圆的周长 = 2 * π * r = 2 * 3.14159 * 20 ≈ 125.6
-                const circumference = 125.6;
-                const offset = circumference - (progress / 100) * circumference;
-                miniProgressBar.style.strokeDashoffset = offset;
-            }
-            
             // 同步显示歌词
             showLyrics();
             // 更新完整歌词列表
             updateFullLyrics();
-            
-            // 保存播放状态（每5秒保存一次）
-            savePlaybackState();
         }
     } catch (error) {
         console.error('更新进度条失败:', error);
@@ -1394,97 +944,6 @@ function showBarsNormal() {
     }
 }
 
-// 播放状态保存相关变量
-let lastSaveTime = 0;
-const SAVE_INTERVAL = 5000; // 5秒保存一次
-
-// 保存播放状态
-function savePlaybackState() {
-    try {
-        const now = Date.now();
-        if (now - lastSaveTime < SAVE_INTERVAL) return;
-        
-        lastSaveTime = now;
-        
-        // 使用 PlayerStore 获取当前歌曲，兼容旧代码
-        let currentSong = null;
-        if (typeof PlayerStore !== 'undefined' && PlayerStore.state && PlayerStore.state.currentSong) {
-            currentSong = PlayerStore.state.currentSong;
-        }
-        
-        if (currentSong && audio && audio.duration) {
-            const state = {
-                songId: currentSong.id,
-                songName: currentSong.name || currentSong.title,
-                artist: currentSong.artist,
-                currentTime: audio.currentTime,
-                duration: audio.duration,
-                savedAt: now
-            };
-            localStorage.setItem('playbackState', JSON.stringify(state));
-        }
-    } catch (error) {
-        console.error('保存播放状态失败:', error);
-    }
-}
-
-// 加载播放状态
-function loadPlaybackState() {
-    try {
-        const stored = localStorage.getItem('playbackState');
-        if (stored) {
-            const state = JSON.parse(stored);
-            
-            // 检查是否过期（超过7天）
-            if (Date.now() - state.savedAt < 7 * 24 * 60 * 60 * 1000) {
-                return state;
-            }
-        }
-    } catch (error) {
-        console.error('读取播放状态失败:', error);
-    }
-    return null;
-}
-
-// 恢复播放状态
-function resumePlayback() {
-    const state = loadPlaybackState();
-    if (state) {
-        // 查找对应的歌曲
-        let foundSong = null;
-        let foundIndex = -1;
-        
-        // 搜索所有播放列表
-        for (const key of Object.keys(playlist)) {
-            const list = playlist[key];
-            if (Array.isArray(list)) {
-                const index = list.findIndex(s => s.id === state.songId);
-                if (index !== -1) {
-                    foundSong = list[index];
-                    foundIndex = index;
-                    break;
-                }
-            }
-        }
-        
-        if (foundSong) {
-            // 切换到对应的播放列表
-            currentSide = foundSong.side || 'A';
-            
-            // 播放歌曲
-            playSong(foundIndex);
-            
-            // 等待音频加载后跳转到保存的位置
-            setTimeout(() => {
-                if (audio && !isNaN(state.currentTime)) {
-                    audio.currentTime = state.currentTime;
-                    UIManager.showToast(`已恢复播放: ${state.songName}`, 'info');
-                }
-            }, 500);
-        }
-    }
-}
-
 // 播放结束处理
 function handlePlaybackEnded() {
     try {
@@ -1504,12 +963,6 @@ function handleAudioError() {
 // 键盘快捷键处理
 function handleKeyboardShortcuts(e) {
     try {
-        // 如果焦点在输入框中，不处理快捷键
-        const activeElement = document.activeElement;
-        if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
-            return;
-        }
-        
         if (e.code === 'Space') {
             e.preventDefault();
             togglePlay();
@@ -1568,15 +1021,8 @@ function shareTo(platform) {
 // 播放上一首
 function playPrevious() {
     try {
-        console.log('🔄 上一首按钮被点击');
-        const currentPlaylist = getCurrentTapePlaylist();
-        console.log('当前播放列表长度:', currentPlaylist.length);
-        if (currentPlaylist.length === 0) {
-            showTooltip('播放列表为空');
-            return;
-        }
+        const currentPlaylist = playlist[currentSide];
         currentSongIndex = (currentSongIndex - 1 + currentPlaylist.length) % currentPlaylist.length;
-        console.log('切换到索引:', currentSongIndex);
         playSong(currentSongIndex);
     } catch (error) {
         console.error('播放上一首失败:', error);
@@ -1587,13 +1033,7 @@ function playPrevious() {
 // 播放下一首
 function playNext() {
     try {
-        console.log('🔄 下一首按钮被点击');
-        const currentPlaylist = getCurrentTapePlaylist();
-        console.log('当前播放列表长度:', currentPlaylist.length);
-        if (currentPlaylist.length === 0) {
-            showTooltip('播放列表为空');
-            return;
-        }
+        const currentPlaylist = playlist[currentSide];
         
         switch (playMode) {
             case 'repeat_one':
@@ -1626,7 +1066,7 @@ function playNext() {
 function shareCurrentSong() {
     try {
         const currentPlaylist = playlist[currentSide];
-        const song = currentPlaylist[currentSongIndex];
+        const song = currentPlaylist[currentTrackIndex];
         
         if (!song) {
             showTooltip('暂无歌曲可分享');
@@ -1664,12 +1104,20 @@ function fallbackShare(text) {
             showTooltip('复制失败，请手动复制');
         });
     } else {
-        // 使用现代的clipboard API
-        navigator.clipboard.writeText(text).then(() => {
+        // 创建一个文本框来选择复制
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-9999px';
+        document.body.appendChild(textArea);
+        textArea.select();
+        try {
+            document.execCommand('copy');
             showTooltip('已复制分享内容');
-        }).catch(() => {
+        } catch (err) {
             showTooltip('复制失败，请手动复制');
-        });
+        }
+        document.body.removeChild(textArea);
     }
 }
 
@@ -1830,7 +1278,6 @@ function parseLyrics(lyricsText) {
     try {
         const lyrics = [];
         const lines = lyricsText.split('\n');
-        // 支持多种时间格式：[mm:ss.xx] 和 [mm:ss.xxx]
         const timeRegex = /\[(\d{2}):(\d{2})\.(\d{2,3})\]/g;
         
         lines.forEach(line => {
@@ -1841,9 +1288,7 @@ function parseLyrics(lyricsText) {
             if (text && !text.includes('作词') && !text.includes('作曲') && !text.includes('编曲') && !text.includes('制作') && !text.includes('监制')) {
                 timeMatches.forEach(match => {
                     const [, minutes, seconds, milliseconds] = match;
-                    // 精确计算时间（支持2位和3位毫秒）
-                    const ms = milliseconds.length === 2 ? parseInt(milliseconds) * 10 : parseInt(milliseconds);
-                    const time = parseInt(minutes) * 60 + parseInt(seconds) + ms / 1000;
+                    const time = parseInt(minutes) * 60 + parseInt(seconds) + parseInt(milliseconds) / 1000;
                     lyrics.push({ time, text });
                 });
             }
@@ -1852,25 +1297,16 @@ function parseLyrics(lyricsText) {
         // 按时间排序
         const sortedLyrics = lyrics.sort((a, b) => a.time - b.time);
         
-        // 去重：移除相同时间的歌词
-        const uniqueLyrics = [];
-        for (let i = 0; i < sortedLyrics.length; i++) {
-            if (i === 0 || sortedLyrics[i].time !== sortedLyrics[i - 1].time) {
-                uniqueLyrics.push(sortedLyrics[i]);
-            }
-        }
-        
         // 计算每句歌词的持续时间
-        for (let i = 0; i < uniqueLyrics.length; i++) {
-            if (i < uniqueLyrics.length - 1) {
-                uniqueLyrics[i].duration = uniqueLyrics[i + 1].time - uniqueLyrics[i].time;
+        for (let i = 0; i < sortedLyrics.length; i++) {
+            if (i < sortedLyrics.length - 1) {
+                sortedLyrics[i].duration = sortedLyrics[i + 1].time - sortedLyrics[i].time;
             } else {
-                uniqueLyrics[i].duration = 5; // 最后一句默认持续5秒
+                sortedLyrics[i].duration = 3; // 最后一句默认持续3秒
             }
         }
         
-        console.log(`解析歌词完成，共 ${uniqueLyrics.length} 行`);
-        return uniqueLyrics;
+        return sortedLyrics;
     } catch (error) {
         console.error('解析歌词失败:', error);
         return [];
@@ -2018,7 +1454,7 @@ function deleteComment(commentId) {
 }
 
 // 回复评论
-function replyToComment(_commentId, username) {
+function replyToComment(commentId, username) {
     try {
         if (!user) {
             showTooltip('请先登录');
@@ -2728,16 +2164,10 @@ let likedSongs = [];
 // 切换喜欢状态
 function toggleLike() {
     try {
-        console.log('❤️ 收藏按钮被点击');
-        const currentSong = playlist[currentSide] ? playlist[currentSide][currentSongIndex] : null;
+        const currentSong = playlist[currentSide][currentSongIndex];
+        const likeBtn = document.getElementById('likeBtn');
         
-        console.log('当前歌曲:', currentSong);
-        console.log('当前磁带:', currentTape, '当前面:', currentSide, '当前索引:', currentSongIndex);
-        
-        if (!currentSong) {
-            console.error('无法获取当前歌曲');
-            return;
-        }
+        if (!currentSong) return;
         
         // 从localStorage加载喜欢的歌曲
         const savedLikedSongs = localStorage.getItem('pfPlayerLikedSongs');
@@ -2869,11 +2299,6 @@ function limitCommentLength() {
 window.addEventListener('DOMContentLoaded', function() {
     // 初始化用户和喜欢状态
     initUserAndLikeStatus();
-    
-    // 恢复播放状态
-    setTimeout(() => {
-        resumePlayback();
-    }, 1000);
 });
 function processLyricText(text) {
     // 优先在演唱停顿的标点处换行（逗号、句号、问号、感叹号等）
@@ -2943,6 +2368,7 @@ function processLyricText(text) {
 function showLyrics() {
     try {
         const currentTime = audio.currentTime;
+        const lyricsContent = document.getElementById('lyricsContent');
         const lyricsFullList = document.getElementById('lyricsFullList');
         const lyricsScrollContent = document.getElementById('lyricsScrollContent');
         const lyricsScrollWrapper = document.getElementById('lyricsScrollWrapper');
@@ -2970,40 +2396,37 @@ function showLyrics() {
                 
                 // 直接显示歌词文本（不换行）
                 const lyricText = currentLyric.text;
-                lyricsScrollContent.innerHTML = `<span style="color: #d9ceb2; font-size: 16px; opacity: 1; white-space: nowrap; display: inline-block; text-align: center;">${lyricText}</span>`;
+                lyricsScrollContent.innerHTML = `<span style="color: #d9ceb2; font-size: 16px; opacity: 1;">${lyricText}</span>`;
                 
-                // 等待DOM更新后再计算位置
-                requestAnimationFrame(() => {
-                    const wrapperWidth = lyricsScrollWrapper.clientWidth;
-                    const contentWidth = lyricsScrollContent.scrollWidth;
-                    
-                    if (contentWidth > wrapperWidth) {
-                        // 需要滚动：计算居中后的滚动距离
-                        const scrollDistance = contentWidth - wrapperWidth;
-                        // 使用缓动函数，让滚动更平滑
-                        const easeProgress = 1 - Math.pow(1 - progress, 3);
-                        const scrollPosition = scrollDistance * easeProgress;
-                        lyricsScrollContent.style.transform = `translateX(${-scrollPosition}px)`;
-                        lyricsScrollContent.style.transition = 'transform 0.3s ease-out';
-                    } else {
-                        // 不需要滚动：居中显示
-                        lyricsScrollContent.style.transform = 'translateX(0)';
-                        lyricsScrollContent.style.transition = 'transform 0.3s ease-out';
-                    }
-                });
+                // 检测歌词是否超出宽度，实现横向滚动
+                const wrapperWidth = lyricsScrollWrapper.clientWidth;
+                const contentWidth = lyricsScrollContent.scrollWidth;
+                
+                if (contentWidth > wrapperWidth) {
+                    // 需要滚动：从右向左滚动
+                    const scrollDistance = contentWidth - wrapperWidth;
+                    const scrollPosition = scrollDistance * progress;
+                    lyricsScrollContent.style.transform = `translateX(${-scrollPosition}px)`;
+                    lyricsScrollContent.style.transition = 'transform 0.1s linear';
+                } else {
+                    // 不需要滚动：居中显示
+                    lyricsScrollContent.style.transform = 'translateX(0)';
+                }
             } else {
-                // 没有歌词时显示提示（居中）
-                lyricsScrollContent.innerHTML = `<span style="color: #d9ceb2; font-size: 16px; opacity: 0.5; white-space: nowrap; display: inline-block; text-align: center;">暂无歌词</span>`;
+                // 没有歌词时显示提示
+                lyricsScrollContent.innerHTML = `<span style="color: #d9ceb2; font-size: 16px; opacity: 0.5;">暂无歌词</span>`;
                 lyricsScrollContent.style.transform = 'translateX(0)';
-                lyricsScrollContent.style.transition = 'transform 0.3s ease-out';
             }
+        } else {
+            console.log('歌词容器未找到 - lyricsScrollContent:', lyricsScrollContent, 'lyricsScrollWrapper:', lyricsScrollWrapper);
         }
         
         // 更新歌词页的滚动效果
         if (lyricsFullList && newIndex >= 0) {
             // 移除所有激活状态
             const allLines = lyricsFullList.querySelectorAll('.lyrics-line');
-            allLines.forEach(line => line.classList.remove('active'));            
+            allLines.forEach(line => line.classList.remove('active'));
+            
             // 找到并激活当前歌词
             const activeLine = lyricsFullList.querySelector(`.lyrics-line[data-index="${newIndex}"]`);
             if (activeLine) {
@@ -3028,8 +2451,6 @@ function showLyrics() {
         // 更新歌词索引（如果发生变化）
         if (newIndex !== currentLyricIndex) {
             currentLyricIndex = newIndex;
-            // 同步更新全局变量
-            window.currentLyricIndex = currentLyricIndex;
         }
     } catch (error) {
         console.error('显示歌词失败:', error);
@@ -3123,8 +2544,6 @@ function updateFullLyrics() {
     // 如果歌词行索引发生变化，则更新高亮
     if (newIndex !== currentLyricIndex) {
         currentLyricIndex = newIndex;
-        // 同步更新全局变量
-        window.currentLyricIndex = currentLyricIndex;
 
         // 更新所有歌词行的样式
         const allLines = lyricsFullList.querySelectorAll('.lyrics-line');
@@ -3179,75 +2598,17 @@ function scrollToLyricLine(targetLine, container) {
 // 播放指定歌曲
 function playSong(index) {
     try {
-        // 检查音频播放器是否已初始化
-        if (!audio) {
-            console.warn('音频播放器尚未初始化，等待初始化完成...');
-            // 等待播放器初始化
-            const checkInterval = setInterval(() => {
-                if (audio) {
-                    clearInterval(checkInterval);
-                    playSong(index); // 重新调用
-                }
-            }, 100);
-            // 设置超时
-            setTimeout(() => {
-                clearInterval(checkInterval);
-                if (!audio) {
-                    console.error('音频播放器初始化超时');
-                    showTooltip('播放器初始化失败，请刷新页面');
-                }
-            }, 5000);
-            return;
-        }
-        
-        // 根据当前磁带获取播放列表
-        let currentPlaylist = getCurrentTapePlaylist();
-        console.log(`当前磁带: ${currentTape} (${tapeConfigs[currentTape]?.name || '未知'})，使用播放列表，索引: ${index}，总共有: ${currentPlaylist.length} 首`);
-        
-        // 如果当前磁带没有歌曲，尝试其他来源
-        if (currentPlaylist.length === 0) {
-            if (typeof PlayerStore !== 'undefined' && PlayerStore.state && PlayerStore.state.playlist && PlayerStore.state.playlist.length > 0) {
-                currentPlaylist = PlayerStore.state.playlist;
-                console.log('当前磁带无歌曲，使用 PlayerStore 播放列表');
-            }
-        }
-        
-        let song = currentPlaylist[index];
-        if (!song) {
-            console.error('歌曲不存在，索引:', index);
-            return;
-        }
-
-        // 对于本地歌曲，从 playlist.local 获取完整数据（包含 data URL）
-        if (song.type === 'local') {
-            const pl = typeof playlist !== 'undefined' ? playlist : window.playlist;
-            if (pl && pl.local && Array.isArray(pl.local)) {
-                const fullSong = pl.local.find(s => s.id === song.id);
-                if (fullSong) {
-                    song = fullSong; // 使用完整的歌曲数据
-                    console.log('从 playlist.local 获取完整本地歌曲:', song.name);
-                }
-            }
-        }
-
-        console.log('准备播放歌曲:', song.name || song.title);
-        
-        // 更新PlayerStore状态
-        PlayerStore.play(song);
-        
-        // 记录播放历史
-        if (window.LocalMusicModule) {
-            LocalMusicModule.addToPlayHistory(song);
-        }
-        
-        // 显示加载状态
+        const currentPlaylist = playlist[currentSide];
+        const song = currentPlaylist[index];
+        if (song) {
+            // 显示加载状态
     isLoading = true;
-    showTooltip(`加载中: ${song.name || song.title || '未知歌曲'}...`);
+    showTooltip(`加载中: ${song.name}...`);
     
     // 更新歌曲名称（支持长标题滚动）
     const trackNameEl = document.getElementById('trackName');
     if (trackNameEl) {
-        const songName = song.name || song.title || '未知歌曲';
+        const songName = song.name || '未知歌曲';
         // 如果标题长度超过15个字符，启用横向滚动
         if (songName.length > 15) {
             trackNameEl.innerHTML = `<span class="track-name-scroll">${songName}</span>`;
@@ -3258,7 +2619,7 @@ function playSong(index) {
         }
     }
     
-    document.getElementById('trackArtist').textContent = song.artist || '未知艺术家';
+    document.getElementById('trackArtist').textContent = song.artist;
     document.getElementById('trackAlbum').textContent = song.album || '';
     
     // 更新专辑封面（使用懒加载）
@@ -3289,17 +2650,11 @@ function playSong(index) {
             if (song.lyrics) {
                 currentLyrics = parseLyrics(song.lyrics);
                 currentLyricIndex = -1;
-                // 同步更新全局变量
-                window.currentLyrics = currentLyrics;
-                window.currentLyricIndex = currentLyricIndex;
                 // 初始化完整歌词列表
                 initFullLyrics();
             } else {
                 currentLyrics = [];
                 currentLyricIndex = -1;
-                // 同步更新全局变量
-                window.currentLyrics = currentLyrics;
-                window.currentLyricIndex = currentLyricIndex;
                 // 更新新的歌词滚动结构
                 const lyricsScrollContent = document.getElementById('lyricsScrollContent');
                 if (lyricsScrollContent) {
@@ -3326,13 +2681,8 @@ function playSong(index) {
                 audioElement.addEventListener('loadedmetadata', () => {
                     // 使用缓存管理器添加音频
                     audioCacheManager.add(song.id, audioElement);
-                    if (audio) {
-                        audio.src = song.url;
-                        playAudio(song);
-                    } else {
-                        console.error('音频播放器未初始化');
-                        isLoading = false;
-                    }
+                    audio.src = song.url;
+                    playAudio(song);
                 });
                 
                 audioElement.addEventListener('error', () => {
@@ -3353,6 +2703,7 @@ function playSong(index) {
             
             // 预加载下一首歌曲
             preloadNextSong(currentPlaylist, index);
+        }
     } catch (error) {
         console.error('播放歌曲失败:', error);
         isLoading = false;
@@ -3364,8 +2715,18 @@ function playSong(index) {
 function playAudio(song) {
     try {
         audio.play().then(() => {
+            isPlaying = true;
             isLoading = false;
-            syncPlayState(true);
+            playIcon.style.display = 'none';
+            pauseIcon.style.display = 'block';
+            leftGear.classList.add('spinning');
+            rightGear.classList.add('spinning');
+            
+            // 更新底部悬浮播放器图标
+            const miniPlayIcon = document.getElementById('mini-play-icon');
+            const miniPauseIcon = document.getElementById('mini-pause-icon');
+            if (miniPlayIcon) miniPlayIcon.style.display = 'none';
+            if (miniPauseIcon) miniPauseIcon.style.display = 'block';
             
             showTooltip(`正在播放: ${song.name} - ${song.artist}`);
             
@@ -3456,136 +2817,6 @@ function preloadSong(song) {
         }
     } catch (error) {
         Logger.debug('预加载歌曲失败:', error);
-    }
-}
-
-// 切换磁带
-function switchTape(direction) {
-    try {
-        const cassette = document.querySelector('.cassette');
-        const labelArea = document.querySelector('.label-area');
-        const tapeCounter = document.querySelector('.tape-counter');
-        const screws = document.querySelectorAll('.screw');
-        
-        if (!cassette) return;
-        
-        // 计算新的磁带索引
-        let newTape = currentTape;
-        if (direction === 'left') {
-            newTape = (currentTape + 1) % tapeConfigs.length;
-        } else if (direction === 'right') {
-            newTape = (currentTape - 1 + tapeConfigs.length) % tapeConfigs.length;
-        }
-        
-        if (newTape === currentTape) return;
-        
-        // 显示切换提示
-        showTooltip(`正在切换到 "${tapeConfigs[newTape].name}" 磁带...`);
-        
-        // 添加切换动画
-        cassette.classList.add('tape-switch');
-        
-        // 暂停当前播放
-        if (audio && !audio.paused) {
-            audio.pause();
-        }
-        
-        // 播放机械音效
-        playMechanicalSound();
-        
-        // 使用requestAnimationFrame确保动画流畅
-        requestAnimationFrame(() => {
-            setTimeout(() => {
-                // 更新磁带配置
-                currentTape = newTape;
-                const config = tapeConfigs[currentTape];
-                
-                // 更新磁带外观
-                cassette.style.background = config.colors.case;
-                
-                // 更新螺丝颜色
-                screws.forEach(screw => {
-                    screw.style.background = config.colors.screw;
-                });
-                
-                // 更新标签区域
-                if (labelArea) {
-                    labelArea.style.background = config.colors.label;
-                }
-                
-                // 更新磁带计数器显示
-                if (tapeCounter) {
-                    tapeCounter.innerHTML = `<div class="counter-text">当前磁带：${config.name} - <span id="currentSideDisplay">${currentSide}-Side</span> 第<span id="currentTrackDisplay">01</span>首 / <span id="totalTracksDisplay">${getCurrentTapeSongCount()}</span>首</div>`;
-                }
-                
-                // 重置歌曲索引
-                currentSongIndex = 0;
-                
-                // 移除切换动画
-                cassette.classList.remove('tape-switch');
-                
-                // 播放新磁带的第一首歌
-                playSong(0);
-                
-                showTooltip(`已切换到 "${config.name}" 磁带`);
-            }, 600); // 匹配CSS动画时间
-        });
-        
-    } catch (error) {
-        console.error('切换磁带失败:', error);
-    }
-}
-
-// 获取当前磁带的歌曲数量
-function getCurrentTapeSongCount() {
-    const pl = typeof playlist !== 'undefined' ? playlist : window.playlist;
-
-    if (currentTape === 0) {
-        // 默认磁带，返回当前面的歌曲数
-        return pl[currentSide]?.length || 0;
-    } else {
-        // 第二张磁带（本地歌曲）- 无数量限制
-        // 返回 playlist.local 中的歌曲数量
-        if (pl.local && pl.local.length > 0) {
-            return pl.local.length;
-        }
-        // 如果 playlist.local 为空，尝试从 LocalMusicModule 获取
-        if (window.LocalMusicModule) {
-            return LocalMusicModule.getLocalSongs().length || 0;
-        }
-        return 0;
-    }
-}
-
-// 获取当前磁带的播放列表
-function getCurrentTapePlaylist() {
-    const pl = typeof playlist !== 'undefined' ? playlist : window.playlist;
-
-    if (currentTape === 0) {
-        // 默认磁带（Pink Floyd）
-        return pl[currentSide] || [];
-    } else {
-        // 第二张磁带（本地歌曲）- 从 playlist.local 获取，无数量限制
-        // 本地歌曲存储在 A-side
-        if (pl.local && pl.local.length > 0) {
-            // 如果当前面是 A，返回所有本地歌曲；如果当前面是 B，也返回所有本地歌曲（无限制）
-            return pl.local;
-        }
-        // 如果 playlist.local 为空，尝试从 IndexedDB 获取
-        if (window.LocalMusicModule) {
-            const cachedSongs = LocalMusicModule.cachedLocalSongs || [];
-            if (cachedSongs.length > 0) {
-                return cachedSongs;
-            }
-        }
-        // 最后尝试从 PlayerStore 获取
-        if (typeof PlayerStore !== 'undefined' && PlayerStore.state && PlayerStore.state.playlist) {
-            const localSongs = PlayerStore.state.playlist.filter(song => song.type === 'local');
-            if (localSongs.length > 0) {
-                return localSongs;
-            }
-        }
-        return [];
     }
 }
 
@@ -3698,46 +2929,75 @@ function toggleSide() {
     }
 }
 
+// 切换播放列表显示/隐藏
+function togglePlaylist() {
+    const playlistContainer = document.getElementById('playlistContainer');
+    if (playlistContainer) {
+        // 检查当前状态，处理不同的maxHeight值
+        const currentMaxHeight = playlistContainer.style.maxHeight;
+        if (currentMaxHeight === '400px') {
+            playlistContainer.style.maxHeight = '0';
+        } else {
+            playlistContainer.style.maxHeight = '400px';
+            renderPlaylist();
+        }
+    }
+}
+
 // 切换播放列表面板显示/隐藏（统一版本）
 function togglePlaylistPanel() {
     try {
-        console.log('[DEBUG] togglePlaylistPanel 被调用');
-        console.log('[DEBUG] UIManager 存在:', typeof UIManager !== 'undefined');
-        console.log('[DEBUG] UIManager.showPlaylistPanel:', typeof UIManager !== 'undefined' ? typeof UIManager.showPlaylistPanel : 'N/A');
+        console.log('togglePlaylistPanel called');
+        console.log('UIManager exists:', typeof UIManager !== 'undefined');
+        console.log('UIManager.showPlaylistPanel exists:', typeof UIManager !== 'undefined' && UIManager.showPlaylistPanel);
         
-        // 统一使用悬浮播放条的播放列表面板
-        if (typeof UIManager !== 'undefined' && typeof UIManager.showPlaylistPanel === 'function') {
-            console.log('[DEBUG] 调用 UIManager.showPlaylistPanel()');
+        // 首先尝试使用UIManager的方法
+        if (typeof UIManager !== 'undefined' && UIManager.showPlaylistPanel) {
+            console.log('调用 UIManager.showPlaylistPanel()');
             UIManager.showPlaylistPanel();
         } else {
-            // 备用方案：直接操作DOM
-            const panel = document.getElementById('playlist-panel');
-            console.log('[DEBUG] 播放列表面板元素:', panel);
-            if (panel) {
-                panel.classList.add('show');
-                console.log('[DEBUG] 使用备用方案显示播放列表面板');
-            } else {
-                console.warn('[DEBUG] 播放列表面板元素不存在');
-            }
+            // 备用方案：使用旧的播放列表容器
+            console.log('使用备用方案 togglePlaylist()');
+            togglePlaylist();
         }
     } catch (error) {
-        console.error('[DEBUG] 切换播放列表面板失败:', error);
+        console.error('切换播放列表面板失败:', error);
+        // 如果UIManager方法失败，使用备用方案
+        togglePlaylist();
     }
 }
 
-// 旧版播放列表切换函数（保持向后兼容，直接调用统一版本）
-function togglePlaylist() {
-    togglePlaylistPanel();
-}
-
-// 渲染播放列表（统一版本，调用 UIManager）
+// 渲染播放列表
 function renderPlaylist() {
-    if (typeof UIManager !== 'undefined' && typeof UIManager.updatePlaylistContent === 'function') {
-        UIManager.updatePlaylistContent();
-        console.log('已调用 UIManager.updatePlaylistContent 刷新播放列表');
-    } else {
-        console.warn('UIManager.updatePlaylistContent 不可用');
-    }
+    const playlistContent = document.getElementById('playlistContent');
+    const currentPlaylist = playlist[currentSide];
+    
+    if (!playlistContent || !currentPlaylist) return;
+    
+    playlistContent.innerHTML = '';
+    
+    currentPlaylist.forEach((song, index) => {
+        const songItem = document.createElement('div');
+        songItem.className = `playlist-item ${index === currentSongIndex ? 'active' : ''}`;
+        songItem.style.padding = '10px 15px';
+        songItem.style.cursor = 'pointer';
+        songItem.style.borderBottom = '1px solid rgba(255, 255, 255, 0.05)';
+        songItem.style.color = index === currentSongIndex ? '#d9ceb2' : 'rgba(255, 255, 255, 0.7)';
+        songItem.style.transition = 'all 0.2s ease';
+        
+        songItem.innerHTML = `
+            <div style="font-weight: bold; margin-bottom: 3px;">${song.name}</div>
+            <div style="font-size: 12px; color: rgba(255, 255, 255, 0.5);">${song.artist} - ${song.album}</div>
+        `;
+        
+        songItem.addEventListener('click', () => {
+            currentSongIndex = index;
+            playSong(index);
+            togglePlaylist();
+        });
+        
+        playlistContent.appendChild(songItem);
+    });
 }
 
 // 触摸开始事件
@@ -3788,32 +3048,16 @@ function handleTouchEnd(e) {
     const diffX = currentX - startX;
     const threshold = 30; // 调整滑动阈值，提高灵敏度
     
-    // 检查是否在磁带盒区域滑动
-    const cassetteCase = e.target.closest('.cassette-case');
-    if (cassetteCase) {
-        // 磁带盒区域滑动：切换磁带
-        if (Math.abs(diffX) > 50) {
-            if (diffX > 0) {
-                // 向右滑动：切换到上一盘磁带
-                switchTape('right');
-            } else {
-                // 向左滑动：切换到下一盘磁带
-                switchTape('left');
+    if (Math.abs(diffX) > threshold) {
+        if (diffX > 0) {
+            // 向右滑动
+            if (currentPage > 1) {
+                slideToPage(currentPage - 1);
             }
-        }
-    } else {
-        // 非磁带盒区域滑动：切换页面
-        if (Math.abs(diffX) > threshold) {
-            if (diffX > 0) {
-                // 向右滑动
-                if (currentPage > 1) {
-                    slideToPage(currentPage - 1);
-                }
-            } else {
-                // 向左滑动
-                if (currentPage < 2) {
-                    slideToPage(currentPage + 1);
-                }
+        } else {
+            // 向左滑动
+            if (currentPage < 2) {
+                slideToPage(currentPage + 1);
             }
         }
     }
@@ -3863,33 +3107,6 @@ function slideToPage(page) {
     if (speedContainer) speedContainer.style.display = 'block';
     if (lyricsContainer) lyricsContainer.style.display = 'block';
     if (trackInfo) trackInfo.style.display = 'block';
-    
-    // 处理歌词页底部提示
-    const lyricsHint = document.getElementById('lyricsHint');
-    if (page === 2) {
-        // 滑到歌词页：显示提示并启动呼吸动画，3秒后隐藏
-        if (lyricsHint) {
-            lyricsHint.style.display = 'block';
-            lyricsHint.style.animation = 'breathHint 2s ease-in-out infinite';
-            lyricsHint.style.opacity = '1';
-            
-            // 3秒后隐藏提示
-            setTimeout(() => {
-                lyricsHint.style.opacity = '0';
-                lyricsHint.style.transition = 'opacity 1s ease';
-                setTimeout(() => {
-                    lyricsHint.style.animation = 'none';
-                }, 1000);
-            }, 3000);
-        }
-    } else {
-        // 返回播放页：重置提示状态
-        if (lyricsHint) {
-            lyricsHint.style.display = 'block';
-            lyricsHint.style.opacity = '1';
-            lyricsHint.style.animation = 'breathHint 2s ease-in-out infinite';
-        }
-    }
     
     // 显示提示
     let pageName = '';
@@ -4006,6 +3223,12 @@ function copyShareLink() {
 // 切换背景设置容器的显示/隐藏
 function toggleBgSettings() {
     const bgSettingsContainer = document.getElementById('bgSettingsContainer');
+    const playlistContainer = document.getElementById('playlistContainer');
+    
+    // 确保播放列表容器关闭
+    if (playlistContainer && playlistContainer.style.maxHeight !== '0') {
+        playlistContainer.style.maxHeight = '0';
+    }
     
     if (bgSettingsContainer) {
         // 检查当前状态，处理不同的maxHeight值
@@ -4027,13 +3250,7 @@ function toggleBgSettings() {
 function playMechanicalSound() {
     try {
         // 使用Web Audio API创建简单的机械音效
-        // @ts-ignore - webkitAudioContext 用于兼容旧版浏览器
-        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-        if (!AudioContextClass) {
-            console.warn('Web Audio API 不支持');
-            return;
-        }
-        const audioContext = new AudioContextClass();
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
         const oscillator = audioContext.createOscillator();
         const gainNode = audioContext.createGain();
         
@@ -4501,12 +3718,9 @@ function adjustColorBrightness(color, percent) {
 // 搜索歌曲功能
 function searchSongs() {
     const searchInput = document.getElementById('searchInput');
+    const playlistContent = document.getElementById('playlistContent');
     
-    if (!searchInput) {
-        // 如果没有搜索框，直接打开搜索页面
-        showTooltip('请在播放列表中使用搜索功能');
-        return;
-    }
+    if (!searchInput || !playlistContent) return;
     
     const keyword = searchInput.value.trim();
     
@@ -4515,8 +3729,31 @@ function searchSongs() {
         return;
     }
     
-    // 直接打开搜索页面
-    openSearchPage(encodeURIComponent(keyword));
+    // 构建搜索URL
+    const searchUrl = `https://www.myfreemp3.com.cn/?page=searchPage&search=${encodeURIComponent(keyword)}`;
+    
+    // 显示搜索结果和添加歌曲表单
+    playlistContent.innerHTML = `
+        <div style="padding: 20px; color: #d9ceb2;">
+            <p style="margin-bottom: 10px;">搜索结果将在新标签页中打开，请在那里试听歌曲。</p>
+            <p style="font-size: 12px; opacity: 0.7; margin-bottom: 15px;">备注：搜索歌曲功能只为用户提供单纯搜索、试听体验，不提供下载和商用。</p>
+            <button onclick="openSearchPage('${encodeURIComponent(keyword)}')" style="margin-bottom: 20px; padding: 8px 16px; background: linear-gradient(145deg, #e8e0d0 0%, #d9ceb2 100%); color: #8B4513; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">打开搜索页面</button>
+            
+            <h4 style="margin-bottom: 15px; color: #d9ceb2;">添加歌曲到播放列表</h4>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <input type="text" id="addSongName" placeholder="歌曲名称" style="padding: 8px 12px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 4px; color: #d9ceb2; font-size: 12px;">
+                <input type="text" id="addSongArtist" placeholder="歌手" style="padding: 8px 12px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 4px; color: #d9ceb2; font-size: 12px;">
+                <input type="text" id="addSongAlbum" placeholder="专辑" style="padding: 8px 12px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 4px; color: #d9ceb2; font-size: 12px;">
+                <input type="text" id="addSongUrl" placeholder="歌曲URL" style="padding: 8px 12px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 4px; color: #d9ceb2; font-size: 12px;">
+                <select id="addSongSide" style="padding: 8px 12px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 4px; color: #d9ceb2; font-size: 12px;">
+                    <option value="current">当前Side (${currentSide})</option>
+                    <option value="A">A-Side</option>
+                    <option value="B">B-Side</option>
+                </select>
+                <button onclick="addSong()" style="padding: 8px 16px; background: linear-gradient(145deg, #8B4513 0%, #D2B48C 100%); color: #e8e0d0; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">添加到播放列表</button>
+            </div>
+        </div>
+    `;
 }
 
 // 打开搜索页面
@@ -4534,10 +3771,7 @@ function addSong() {
     const songUrl = document.getElementById('addSongUrl');
     const songSide = document.getElementById('addSongSide');
     
-    if (!songName || !songArtist || !songAlbum || !songUrl || !songSide) {
-        showTooltip('请填写歌曲信息');
-        return;
-    }
+    if (!songName || !songArtist || !songAlbum || !songUrl || !songSide) return;
     
     const name = songName.value.trim();
     const artist = songArtist.value.trim();
@@ -4563,11 +3797,6 @@ function addSong() {
     
     // 添加歌曲到指定side
     playlist[side].push(newSong);
-    
-    // 同时添加到 PlayerStore 播放列表
-    if (typeof PlayerStore !== 'undefined' && PlayerStore.state) {
-        PlayerStore.state.playlist.push(newSong);
-    }
     
     // 显示成功提示
     showTooltip(`歌曲已添加到${side === 'A' ? 'A-Side' : 'B-Side'}播放列表`);
@@ -4794,15 +4023,11 @@ function savePlayHistory(song) {
 function initPerformanceMonitoring() {
     // 监控页面加载性能
     window.addEventListener('load', () => {
-        // 使用现代的 PerformanceNavigationTiming API
-        const navigationEntries = performance.getEntriesByType('navigation');
-        const paintEntries = performance.getEntriesByType('paint');
-        
         const performanceData = {
-            pageLoadTime: navigationEntries[0]?.loadEventEnd || 0,
-            domContentLoadedTime: navigationEntries[0]?.domContentLoadedEventEnd || 0,
-            firstPaint: paintEntries[0]?.startTime || 0,
-            firstContentfulPaint: paintEntries[1]?.startTime || 0
+            pageLoadTime: performance.timing.loadEventEnd - performance.timing.navigationStart,
+            domContentLoadedTime: performance.timing.domContentLoadedEventEnd - performance.timing.navigationStart,
+            firstPaint: performance.getEntriesByType('paint')[0]?.startTime || 0,
+            firstContentfulPaint: performance.getEntriesByType('paint')[1]?.startTime || 0
         };
         
         Logger.debug('页面加载性能数据:', performanceData);

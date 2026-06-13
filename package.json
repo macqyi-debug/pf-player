@@ -1,11 +1,14 @@
 {
   "name": "pf-player",
-  "version": "3.3.3",
+  "version": "4.1.6",
   "description": "复古磁带风格的音乐播放器",
   "main": "index.html",
   "scripts": {
     "dev": "python3 -m http.server 8000",
-    "deploy": "vercel --prod"
+    "deploy": "vercel --prod",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
   },
   "keywords": [
     "music",
@@ -17,8 +20,28 @@
   "license": "MIT",
   "dependencies": {
     "lucide-react": "^1.17.0",
-    "react-router-dom": "^7.16.0",
-    "styled-components": "^6.4.2",
-    "zustand": "^5.0.14"
+    "react-router-dom": "^7.16.0"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0"
+  },
+  "jest": {
+    "testEnvironment": "jsdom",
+    "testMatch": [
+      "**/tests/**/*.test.js"
+    ],
+    "collectCoverageFrom": [
+      "js/**/*.js",
+      "!js/**/*.test.js"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "branches": 50,
+        "functions": 50,
+        "lines": 50,
+        "statements": 50
+      }
+    }
   }
 }
