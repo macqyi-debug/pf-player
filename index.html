@@ -49,14 +49,20 @@
         
         /* ==================== 新增：页面和导航样式 ==================== */
         
+        /* 安全区域 - 适配刘海屏 */
+        .safe-area-top {
+            display: none;
+        }
+        
         /* 页面容器 */
         .page-container {
             position: relative;
             width: 100%;
-            height: calc(100vh - env(safe-area-inset-bottom) - 70px);
+            height: calc(100vh - env(safe-area-inset-bottom, 0px) - 70px);
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
             padding-bottom: 80px;
+            padding-top: 0;
         }
         
         /* 页面通用样式 */
@@ -67,20 +73,116 @@
         }
         
         .page-header {
-            margin-bottom: 20px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: auto;
+            min-height: 80px;
+            background-color: rgba(15, 35, 33, 0.98);
+            z-index: 9990;
+            padding: 40px 15px 20px 15px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
         }
         
         .page-header h1 {
             color: #d9ceb2;
-            font-size: 24px;
+            font-size: 18px;
             font-weight: 600;
-            margin: 0 0 10px 0;
+            margin: 0;
+            padding-left: 20px;
+            line-height: 1.5;
+            text-align: left;
         }
         
-        .page-content {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
+        .subtitle {
+            font-size: 12px;
+            color: rgba(217, 206, 178, 0.7);
+            margin: 4px 0 0 0;
+            padding-left: 20px;
+            line-height: 1.5;
+            text-align: left;
+        }
+        
+        /* 发现页特定样式 */
+        .discover-page .page-header {
+            min-height: 140px;
+            margin-top: 0;
+            margin-bottom: 0;
+        }
+        
+        .discover-page .search-bar {
+            margin-left: 0;
+            margin-right: 0;
+        }
+        
+        .discover-page #search-input {
+            margin-left: 0;
+            margin-right: 0;
+            width: 280px;
+            height: 28px;
+            padding-left: 10px;
+            padding-right: 10px;
+        }
+        
+        .discover-page .section h2 {
+            font-size: 14px;
+        }
+        
+        .discover-page .page-content {
+            padding-top: 190px;
+        }
+        
+        /* 邂逅页特定样式 */
+        .meet-page .page-header {
+            min-height: 100px;
+            margin-top: 0;
+            margin-bottom: 0;
+        }
+        
+        .meet-page .page-header h1 {
+            height: auto;
+            line-height: 1.5;
+        }
+        
+        .meet-page .subtitle {
+            position: absolute;
+            top: 70px;
+        }
+        
+        .meet-page .section h2 {
+            font-size: 14px;
+        }
+        
+        .meet-page .page-content {
+            padding-top: 140px;
+        }
+        
+        /* 我的页特定样式 */
+        .my-page .page-header {
+            min-height: 100px;
+            margin-top: 0;
+            margin-bottom: 0;
+        }
+        
+        .my-page .page-header h1 {
+            height: auto;
+            line-height: 1.5;
+        }
+        
+        .my-page .subtitle {
+            position: absolute;
+            top: 70px;
+        }
+        
+        .my-page .section h2 {
+            font-size: 14px;
+        }
+        
+        .my-page .page-content {
+            padding-top: 140px;
         }
         
         /* ===== 底部一体式悬浮台 ===== */
@@ -349,7 +451,7 @@
             backdrop-filter: blur(20px);
             border-top-left-radius: 24px;
             border-top-right-radius: 24px;
-            z-index: 999;
+            z-index: 99999;
             display: flex;
             flex-direction: column;
             transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
@@ -702,7 +804,7 @@
             background: linear-gradient(135deg, #1f6156 0%, #0d3d36 100%);
             border-top-left-radius: 24px;
             border-top-right-radius: 24px;
-            z-index: 200;
+            z-index: 9999;
             transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1);
             overflow: hidden;
         }
@@ -1043,7 +1145,7 @@
         
         .section h2 {
             color: #d9ceb2;
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 600;
             margin: 0 0 15px 0;
         }
@@ -1052,16 +1154,21 @@
             display: flex;
             gap: 8px;
             margin-top: 15px;
+            margin-left: 0;
+            margin-right: 0;
         }
         
         .search-bar input {
             flex: 1;
-            padding: 10px 15px;
+            padding: 10px 10px;
             background: rgba(217, 206, 178, 0.1);
             border: 1px solid rgba(217, 206, 178, 0.2);
             border-radius: 20px;
             color: #d9ceb2;
-            font-size: 14px;
+            font-size: 12px;
+            height: 28px;
+            margin-left: 0;
+            margin-right: 0;
         }
         
         .search-bar input::placeholder {
@@ -1069,8 +1176,8 @@
         }
         
         .search-btn {
-            width: 40px;
-            height: 40px;
+            width: 28px;
+            height: 28px;
             background: rgba(217, 206, 178, 0.2);
             border: none;
             border-radius: 50%;
@@ -1079,6 +1186,22 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            margin-left: 0;
+            margin-right: 0;
+        }
+        
+        .search-results {
+            padding-top: 10px;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+            margin-left: 0;
+            margin-right: 0;
+            max-height: 300px;
+            height: auto;
+            overflow-y: auto;
+            display: block;
+            flex-direction: row;
+            transform: rotate(0deg);
         }
         
         .recommendation-card {
@@ -2047,23 +2170,23 @@
 
         /* 歌词页头部 */
         .lyrics-header {
-            padding: 30px 20px 20px;
+            padding: 15px 20px 10px;
             text-align: center;
             flex-shrink: 0;
         }
-
+        
         .lyrics-song-title {
-            font-size: 28px;
+            font-size: 22px;
             font-weight: bold;
             color: #d9ceb2;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             letter-spacing: 2px;
             text-shadow: 0 2px 20px rgba(217, 206, 178, 0.3);
             font-family: 'Microsoft YaHei UI', 'Microsoft YaHei', sans-serif;
         }
-
+        
         .lyrics-song-artist {
-            font-size: 16px;
+            font-size: 14px;
             color: rgba(255, 255, 255, 0.7);
             letter-spacing: 1px;
             font-family: 'Microsoft YaHei UI', 'Microsoft YaHei', sans-serif;
@@ -2094,7 +2217,7 @@
             flex: 1;
             overflow-y: auto;
             width: 100%;
-            padding: 20px 0;
+            padding: 10px 0;
             -webkit-overflow-scrolling: touch;
         }
 
@@ -2102,17 +2225,17 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 18px;
-            padding: 20px 20px 80px;
+            gap: 14px;
+            padding: 10px 20px 60px;
             min-height: 100%;
         }
 
         .fullscreen-lyrics-container .lyrics-line {
             text-align: center;
             font-size: 14px;
-            line-height: 1.8;
+            line-height: 1.6;
             transition: all 0.25s ease;
-            padding: 8px 20px;
+            padding: 6px 15px;
             max-width: 100%;
             opacity: 0.4;
             color: rgba(255, 255, 255, 0.5);
@@ -2285,7 +2408,7 @@
         }
 
         .page-1 .content-area {
-            display: flex;
+            display: block;
             flex-direction: column;
             align-items: center;
             gap: 12px;
@@ -2293,7 +2416,10 @@
             justify-content: flex-start;
             width: 100%;
             max-width: 420px;
-            padding-bottom: 20px;
+            padding-top: 10px;
+            padding-bottom: 10px;
+            margin-top: -30px;
+            margin-bottom: -30px;
         }
 
         .page-1 .cassette-case {
@@ -2332,6 +2458,7 @@
             align-items: center;
             justify-content: flex-start;
             padding: 20px;
+            top: 0px;
         }
 
         .slide-container.slide-to-2 .page-1 {
@@ -4343,9 +4470,197 @@
         .detail-section li {
             margin-bottom: 4px;
         }
+        
+        /* ==================== 小屏设备适配（iPhone 14等） ==================== */
+        @media screen and (max-height: 852px) {
+            /* 优化播放页面 */
+            .player-modal {
+                border-top-left-radius: 18px;
+                border-top-right-radius: 18px;
+            }
+            
+            .player-top-content {
+                padding: 60px 20px 10px;
+            }
+            
+            .player-cassette {
+                width: 240px;
+                height: 170px;
+            }
+            
+            .player-info {
+                margin: 12px 0;
+            }
+            
+            .player-song-title {
+                font-size: 18px;
+                margin: 0 0 5px 0;
+            }
+            
+            .player-song-artist {
+                font-size: 14px;
+            }
+            
+            .player-progress {
+                margin-bottom: 15px;
+            }
+            
+            .player-bottom-controls {
+                padding: 10px 20px calc(15px + env(safe-area-inset-bottom));
+            }
+            
+            .player-controls {
+                gap: 15px;
+            }
+            
+            /* 歌词页面优化 */
+            .fullscreen-lyrics-container {
+                padding: 50px 20px 20px;
+            }
+            
+            .fullscreen-lyrics-container .lyrics-song-title {
+                font-size: 18px;
+                margin-bottom: 8px;
+            }
+            
+            .fullscreen-lyrics-container .lyrics-song-artist {
+                font-size: 13px;
+                margin-bottom: 10px;
+            }
+            
+            .fullscreen-lyrics-container .lyrics-full-container {
+                height: calc(100vh - 220px);
+            }
+            
+            .fullscreen-lyrics-container .lyrics-line {
+                font-size: 16px;
+                padding: 8px 0;
+            }
+            
+            .fullscreen-lyrics-container .lyrics-line.active {
+                font-size: 20px;
+            }
+        }
+        
+        /* iPhone 14 (390x844) 及更小屏幕 */
+        @media screen and (max-height: 750px) {
+            .player-top-content {
+                padding: 45px 20px 5px;
+            }
+            
+            .player-cassette {
+                width: 200px;
+                height: 140px;
+            }
+            
+            .player-info {
+                margin: 8px 0;
+            }
+            
+            .player-song-title {
+                font-size: 16px;
+            }
+            
+            .player-song-artist {
+                font-size: 12px;
+            }
+            
+            .player-progress {
+                margin-bottom: 10px;
+            }
+            
+            .progress-bar-container {
+                height: 3px;
+            }
+            
+            .player-bottom-controls {
+                padding: 8px 20px calc(12px + env(safe-area-inset-bottom));
+            }
+            
+            .control-btn {
+                width: 40px;
+                height: 40px;
+            }
+            
+            .player-modal .control-btn.play-btn {
+                width: 42px;
+                height: 42px;
+            }
+            
+            /* 歌词页面 */
+            .fullscreen-lyrics-container {
+                padding: 40px 15px 15px;
+            }
+            
+            .fullscreen-lyrics-container .lyrics-song-title {
+                font-size: 16px;
+            }
+            
+            .fullscreen-lyrics-container .lyrics-full-container {
+                height: calc(100vh - 180px);
+            }
+            
+            .fullscreen-lyrics-container .lyrics-line {
+                font-size: 15px;
+                padding: 6px 0;
+            }
+            
+            .fullscreen-lyrics-container .lyrics-line.active {
+                font-size: 18px;
+            }
+        }
+        
+        /* 超小屏幕适配（iPhone SE等） */
+        @media screen and (max-height: 668px) {
+            .player-top-content {
+                padding: 35px 15px 5px;
+            }
+            
+            .player-cassette {
+                width: 180px;
+                height: 125px;
+            }
+            
+            .player-info {
+                margin: 5px 0;
+            }
+            
+            .player-song-title {
+                font-size: 15px;
+            }
+            
+            .player-song-artist {
+                font-size: 11px;
+            }
+            
+            .player-progress {
+                margin-bottom: 8px;
+            }
+            
+            .player-bottom-controls {
+                padding: 6px 15px calc(10px + env(safe-area-inset-bottom));
+            }
+            
+            .control-btn {
+                width: 36px;
+                height: 36px;
+            }
+            
+            .player-modal .control-btn.play-btn {
+                width: 38px;
+                height: 38px;
+            }
+            
+            .player-controls {
+                gap: 12px;
+            }
+        }
     </style>
 </head>
 <body>
+    <!-- 安全区域 - 适配刘海屏 -->
+    <div class="safe-area-top" id="safe-area-top"></div>
+    
     <!-- 加载首屏 -->
     <div id="loading-screen" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; min-height: -webkit-fill-available; background: #1f6156; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; padding: 0; margin: 0; box-sizing: border-box;">
         <!-- iPhone 13 适配尺寸底框 -->
@@ -4704,7 +5019,7 @@
                 </div>
                 
                 <!-- 横竖屏切换按钮（白色，左侧） -->
-                <button class="rotate-screen-btn" id="rotateScreenBtn" onclick="toggleScreenOrientation()" style="position: relative; top: auto; right: auto; color: white;">
+                <button class="rotate-screen-btn" id="rotateScreenBtn" onclick="toggleScreenOrientation()" style="position: relative; top: auto; left: 10px; right: auto; color: white;">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect>
                         <line x1="12" y1="18" x2="12" y2="18"></line>
