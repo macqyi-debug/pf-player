@@ -14,7 +14,7 @@ const MeetPage = {
                 <div class="page-content">
                     <!-- 弹幕评论播放页 -->
                     <section class="section danmaku-player">
-                        <h2>▶大伙觉得呢</h2>
+                        <h2>▶发射弹幕</h2>
                         <div class="player-with-danmaku">
                             <div class="song-info">
                                 <h3>Comfortably Numb</h3>

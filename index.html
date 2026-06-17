@@ -112,6 +112,11 @@
             margin-top: 0;
             margin-bottom: 0;
         }
+
+        .discover-page .page-header h1 {
+            font-size: 18px;
+            line-height: 27px;
+        }
         
         .discover-page .search-bar {
             margin-left: 0;
@@ -128,7 +133,7 @@
         }
         
         .discover-page .section h2 {
-            font-size: 14px;
+            font-size: 16px;
         }
         
         .discover-page .page-content {
@@ -145,15 +150,17 @@
         .meet-page .page-header h1 {
             height: auto;
             line-height: 1.5;
+            font-size: 18px;
         }
         
         .meet-page .subtitle {
             position: absolute;
             top: 70px;
+            font-size: 12px;
         }
         
         .meet-page .section h2 {
-            font-size: 14px;
+            font-size: 16px;
         }
         
         .meet-page .page-content {
@@ -169,7 +176,8 @@
         
         .my-page .page-header h1 {
             height: auto;
-            line-height: 1.5;
+            font-size: 18px;
+            line-height: 27px;
         }
         
         .my-page .subtitle {
@@ -178,7 +186,7 @@
         }
         
         .my-page .section h2 {
-            font-size: 14px;
+            font-size: 18px;
         }
         
         .my-page .page-content {
@@ -192,7 +200,7 @@
             left: 50%;
             transform: translateX(-50%);
             width: 100%;
-            max-width: 420px;
+            max-width: 100%;
             z-index: 100;
             background: rgba(20, 40, 38, 0.75);
             backdrop-filter: blur(20px) saturate(1.8);
@@ -445,7 +453,7 @@
             left: 50%;
             transform: translateX(-50%) translateY(100%);
             width: 100%;
-            max-width: 420px;
+            max-width: 100%;
             height: 70vh;
             background: rgba(15, 35, 33, 0.95);
             backdrop-filter: blur(20px);
@@ -799,7 +807,7 @@
             left: 50%;
             transform: translateX(-50%) translateY(100%);
             width: 100%;
-            max-width: 420px;
+            max-width: 100%;
             height: 100vh;
             background: linear-gradient(135deg, #1f6156 0%, #0d3d36 100%);
             border-top-left-radius: 24px;
@@ -853,11 +861,12 @@
         .player-top-content {
             flex: 1;
             width: 100%;
-            display: flex;
+            max-width: 420px;
+            display: block;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 80px 20px 20px;
+            padding: 80px 30px 20px;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
         }
@@ -1006,7 +1015,7 @@
         }
         
         .control-btn:hover {
-            background: rgba(217, 206, 178, 0.3);
+            background: transparent;
             transform: scale(1.05);
         }
         
@@ -1020,7 +1029,7 @@
         }
         
         .player-modal .control-btn.play-btn:hover {
-            background: rgba(217, 206, 178, 0.1);
+            background: transparent;
         }
         
         .control-btn svg {
@@ -1065,7 +1074,7 @@
         
         .import-panel-content {
             width: 100%;
-            max-width: 420px;
+            max-width: 100%;
             background: #1f6156;
             border-radius: 20px 20px 0 0;
             padding: 20px;
@@ -1462,7 +1471,7 @@
         
         .subtitle {
             color: rgba(217, 206, 178, 0.6);
-            font-size: 14px;
+            font-size: 12px;
             margin: 0;
         }
         
@@ -2003,7 +2012,31 @@
             margin-top: 20px;
         }
         
-        /* 响应式调整 */
+        /* 响应式调整 - 大屏设备限制最大宽度 */
+        @media (min-width: 500px) {
+            .player-modal,
+            .bottom-dock,
+            .playlist-panel,
+            .import-panel-content {
+                max-width: 500px;
+            }
+        }
+
+        /* 小屏幕设备磁带盒缩放 */
+        @media (max-width: 340px) {
+            .cassette-case {
+                transform: scale(0.85);
+                transform-origin: top center;
+            }
+        }
+
+        @media (min-width: 341px) and (max-width: 360px) {
+            .cassette-case {
+                transform: scale(0.92);
+                transform-origin: top center;
+            }
+        }
+
         @media (max-width: 420px) {
             .player-modal-content {
                 padding: 40px 15px 60px;
@@ -2044,7 +2077,7 @@
         .loading-iphone-container {
             position: relative;
             width: 100%;
-            max-width: 100vw;
+            max-width: 100%;
             min-height: 100vh;
             height: -webkit-fill-available;
             background: #1f6156;
@@ -2133,6 +2166,16 @@
         .lyrics-full-container {
             scrollbar-width: thin;
             scrollbar-color: rgba(217, 206, 178, 0.5) transparent;
+            height: calc(100vh - 200px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 0;
+            position: relative;
+            width: 100%;
+            max-width: 100%;
+            margin: 0 auto;
         }
 
         .lyrics-full-container::-webkit-scrollbar {
@@ -2152,29 +2195,49 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 20px;
+            justify-content: flex-start;
+            gap: 16px;
             padding: 20px 20px 80px;
             min-height: 100%;
+            width: 100%;
+            max-width: 100%;
+            margin: 0 auto;
+            text-align: center;
         }
 
         /* 全屏歌词页容器 */
         .fullscreen-lyrics-container {
             width: 100%;
+            max-width: 100%;
             height: 100%;
             display: flex;
             flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
             background: transparent;
             position: relative;
             padding: 0;
+            left: 0;
+            margin: 0 auto;
         }
 
         /* 歌词页头部 */
         .lyrics-header {
+            width: 100%;
+            max-width: 100%;
+            height: 80px;
             padding: 15px 20px 10px;
             text-align: center;
             flex-shrink: 0;
+            position: relative;
+            top: 0;
+            left: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0 auto;
         }
-        
+
         .lyrics-song-title {
             font-size: 22px;
             font-weight: bold;
@@ -2232,7 +2295,7 @@
 
         .fullscreen-lyrics-container .lyrics-line {
             text-align: center;
-            font-size: 14px;
+            font-size: 13px;
             line-height: 1.6;
             transition: all 0.25s ease;
             padding: 6px 15px;
@@ -2244,7 +2307,7 @@
 
         .fullscreen-lyrics-container .lyrics-line.active {
             color: #d9ceb2;
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 400;
             opacity: 1;
             text-shadow: 0 0 15px rgba(217, 206, 178, 0.4);
@@ -2254,7 +2317,7 @@
         .fullscreen-lyrics-container .lyrics-line.prev,
         .fullscreen-lyrics-container .lyrics-line.next {
             opacity: 0.65;
-            font-size: 14px;
+            font-size: 13px;
             color: rgba(255, 255, 255, 0.6);
         }
 
@@ -2287,6 +2350,7 @@
 
         .share-btn:hover {
             transform: scale(1.1);
+            background: transparent;
         }
 
         .share-btn svg {
@@ -2356,13 +2420,12 @@
             align-items: center;
             gap: 8px;
             width: 100%;
-            max-width: 100vw;
-            padding: calc(env(safe-area-inset-top) + 10px) 12px calc(env(safe-area-inset-bottom) + 25px);
+            max-width: 100%;
+            padding: calc(env(safe-area-inset-top)) 10px calc(env(safe-area-inset-bottom) + 20px);
             min-height: 100vh;
             height: -webkit-fill-available;
             box-sizing: border-box;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
+            overflow: hidden;
         }
 
         .player-top-content {
@@ -2381,6 +2444,12 @@
             overflow: hidden;
             position: relative;
             display: flex;
+            left: 0;
+            top: -50px;
+            padding-top: 0;
+            padding-bottom: 0;
+            margin-top: 0;
+            margin-bottom: 0;
         }
 
         .slide-page {
@@ -2389,63 +2458,62 @@
             flex-shrink: 0;
             position: relative;
             transition: transform 0.3s ease;
-            overflow-y: auto;
             overflow-x: hidden;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
 
         .page-1 {
             left: 0;
+            top: 0;
             background: transparent;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: flex-start;
-            padding: 15px 15px 30px;
+            padding: 10px 0;
             min-height: 100%;
-            overflow-y: auto;
             width: 100%;
             box-sizing: border-box;
         }
 
         .page-1 .content-area {
-            display: block;
+            display: flex;
             flex-direction: column;
             align-items: center;
             gap: 12px;
             flex: 0 0 auto;
             justify-content: flex-start;
             width: 100%;
-            max-width: 420px;
-            padding-top: 10px;
-            padding-bottom: 10px;
-            margin-top: -30px;
-            margin-bottom: -30px;
+            max-width: 100%;
+            padding: 0 15px;
+            margin: 0;
+            position: absolute;
         }
 
         .page-1 .cassette-case {
-            margin-bottom: 15px;
-            width: 100%;
-            max-width: 380px;
+            margin-bottom: 8px;
         }
 
         .page-1 .track-info {
             text-align: center;
-            margin-bottom: 16px;
+            margin-bottom: 10px;
         }
 
         .page-1 .time-display {
-            margin-bottom: 16px;
+            margin-bottom: 10px;
         }
 
         .page-1 .progress-container,
         .page-1 .volume-container,
         .page-1 .speed-container {
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
 
         .page-1 .player-bottom-controls {
             flex-shrink: 0;
             margin-top: auto;
+            margin-bottom: 20px;
             padding-top: 15px;
             width: 100%;
             max-width: 420px;
@@ -2456,9 +2524,14 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: flex-start;
-            padding: 20px;
+            justify-content: center;
+            padding: 60px 10px 20px;
             top: 0px;
+            left: 0;
+            text-align: center;
+            width: 100%;
+            min-height: 100vh;
+            position: relative;
         }
 
         .slide-container.slide-to-2 .page-1 {
@@ -3039,6 +3112,13 @@
             justify-content: space-evenly;
         }
 
+        .page-1 .controls-row {
+            padding-left: 0;
+            padding-right: 0;
+            margin-left: 0px;
+            margin-right: 0px;
+        }
+
         /* 控制按钮基础样式 */
         .control-btn {
             border: none;
@@ -3057,6 +3137,7 @@
         .control-btn:hover,
         .control-btn:active {
             transform: scale(1.2);
+            background: transparent;
         }
 
         /* 播放按钮样式 */
@@ -3396,10 +3477,10 @@
         .lyrics-line {
             text-align: center;
             color: rgba(255, 255, 255, 0.9);
-            font-size: 14px;
+            font-size: 13px;
             font-weight: normal;
             font-family: 'Microsoft YaHei UI', 'Microsoft YaHei', sans-serif;
-            line-height: 1.8;
+            line-height: 1.6;
             letter-spacing: 0.5px;
             transition: all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
             padding: 4px 0;
@@ -3410,7 +3491,7 @@
 
         .lyrics-line.active {
             color: #d9ceb2;
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 400;
             opacity: 1;
             text-shadow: 0 2px 10px rgba(217, 206, 178, 0.3);
@@ -3419,7 +3500,7 @@
 
         .lyrics-line.next {
             opacity: 0.5;
-            font-size: 14px;
+            font-size: 13px;
             color: rgba(255, 255, 255, 0.7);
             font-weight: normal;
             font-family: 'Microsoft YaHei UI', 'Microsoft YaHei', sans-serif;
@@ -4139,6 +4220,7 @@
         .landscape-control-btn:hover {
             color: #fff;
             transform: scale(1.1);
+            background: transparent;
         }
         
         .landscape-control-btn.active {
@@ -4533,12 +4615,12 @@
             }
             
             .fullscreen-lyrics-container .lyrics-line {
-                font-size: 16px;
-                padding: 8px 0;
+                font-size: 13px;
+                padding: 6px 0;
             }
             
             .fullscreen-lyrics-container .lyrics-line.active {
-                font-size: 20px;
+                font-size: 14px;
             }
         }
         
@@ -4601,12 +4683,12 @@
             }
             
             .fullscreen-lyrics-container .lyrics-line {
-                font-size: 15px;
-                padding: 6px 0;
+                font-size: 13px;
+                padding: 5px 0;
             }
             
             .fullscreen-lyrics-container .lyrics-line.active {
-                font-size: 18px;
+                font-size: 13px;
             }
         }
         
@@ -4669,20 +4751,20 @@
             <!-- 内容容器 -->
             <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; width: 100%; padding: 20px;">
                 <!-- Logo 区域 -->
-                <div style="flex: 1; display: flex; align-items: center; justify-content: center;">
-                    <div style="width: 160px; height: 160px; position: relative;">
+                <div style="flex: 1.5; display: flex; align-items: center; justify-content: center;">
+                    <div style="width: 112px; height: 112px; position: relative;">
                         <!-- PF Logo -->
-                        <img src="assets/images/PF-Logo.png" alt="PF Logo" style="width: 160px; height: 160px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); object-fit: contain;"/>
+                        <img src="assets/images/PF-Logo.png" alt="PF Logo" style="width: 112px; height: 112px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); object-fit: contain;"/>
                     </div>
                 </div>
-                
+
                 <!-- 内容区域 -->
                 <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 20px;">
                     <h1 style="color: #d9ceb2; font-size: 36px; margin-bottom: 20px; font-family: 'Courier New', monospace; font-weight: 300;">PF-Player</h1>
                     <p style="color: #d9ceb2; font-size: 18px; margin-bottom: 40px; font-family: 'Courier New', monospace;">Wish You Were Here</p>
                     <p style="color: rgba(217, 206, 178, 0.7); font-size: 12px; font-family: 'Courier New', monospace;">v4.2.0</p>
                 </div>
-                
+
                 <!-- 加载条区域 -->
                 <div style="flex: 1; display: flex; align-items: flex-start; justify-content: center; padding-top: 40px;">
                     <!-- 加载动画条 -->
@@ -5019,7 +5101,7 @@
                 </div>
                 
                 <!-- 横竖屏切换按钮（白色，左侧） -->
-                <button class="rotate-screen-btn" id="rotateScreenBtn" onclick="toggleScreenOrientation()" style="position: relative; top: auto; left: 10px; right: auto; color: white;">
+                <button class="rotate-screen-btn" id="rotateScreenBtn" onclick="toggleScreenOrientation()" style="position: relative; top: auto; left: 10px; right: auto; color: white; margin-right: 50px;">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect>
                         <line x1="12" y1="18" x2="12" y2="18"></line>
