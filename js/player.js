@@ -74,7 +74,7 @@ window.currentLyricIndex = currentLyricIndex;
 let currentSongIndex = 0;
 let currentSide = 'A'; // 当前磁带面
 let currentTape = 0; // 当前磁带索引：0-默认磁带（Pink Floyd歌曲），1-本地歌曲磁带
-let playMode = 'repeat'; // 播放模式：repeat(列表循环), repeat_one(单曲循环), shuffle(随机播放)
+let playMode = 'repeat'; // 播放模式：repeat(列表循环), repeat_one(单曲循环), zaxin(扎心循环)
 
 // 磁带配置
 const tapeConfigs = [
@@ -82,9 +82,9 @@ const tapeConfigs = [
         id: 'default',
         name: 'Pink Floyd',
         colors: {
-            case: 'linear-gradient(145deg, #e8e0d0 0%, #d9ceb2 50%, #c8b898 100%)',
-            label: '#1a1a1a',
-            screw: '#333'
+            case: 'linear-gradient(145deg, #F7E9D7 0%, #EDE3D5 50%, #E3D8CB 100%)',
+            label: '#D9776A',
+            screw: '#c4b89a'
         },
         side: 'A'
     },
@@ -95,6 +95,16 @@ const tapeConfigs = [
             case: 'linear-gradient(145deg, #2d5a4a 0%, #1f4235 50%, #152d25 100%)',
             label: '#0d1a15',
             screw: '#2a4a3a'
+        },
+        side: 'A'
+    },
+    {
+        id: 'indigo',
+        name: '靛蓝回响',
+        colors: {
+            case: 'linear-gradient(145deg, #483D8B 0%, #3C3070 50%, #2A2050 100%)',
+            label: '#D9776A',
+            screw: '#363056'
         },
         side: 'A'
     }
@@ -1113,18 +1123,21 @@ function bindEventListeners() {
 function syncPlayState(playing) {
     isPlaying = playing;
     
-    // 同步主播放器图标
+    // 同步主播放器图标 (通过ID获取的img元素)
     if (playIcon) playIcon.style.display = playing ? 'none' : 'block';
     if (pauseIcon) pauseIcon.style.display = playing ? 'block' : 'none';
     
     // 同步底部悬浮播放器图标
-    const miniPlayBtn = document.getElementById('mini-play-btn');
-    if (miniPlayBtn) {
-        const miniPlayIcon = miniPlayBtn.querySelector('.mini-play-icon');
-        const miniPauseIcon = miniPlayBtn.querySelector('.mini-pause-icon');
-        if (miniPlayIcon) miniPlayIcon.style.display = playing ? 'none' : 'block';
-        if (miniPauseIcon) miniPauseIcon.style.display = playing ? 'block' : 'none';
-    }
+    const miniPlayIcon = document.getElementById('mini-play-icon');
+    const miniPauseIcon = document.getElementById('mini-pause-icon');
+    if (miniPlayIcon) miniPlayIcon.style.display = playing ? 'none' : 'block';
+    if (miniPauseIcon) miniPauseIcon.style.display = playing ? 'block' : 'none';
+    
+    // 同步横屏模式播放图标
+    const landscapePlayIcon = document.getElementById('landscapePlayIcon');
+    const landscapePauseIcon = document.getElementById('landscapePauseIcon');
+    if (landscapePlayIcon) landscapePlayIcon.style.display = playing ? 'none' : 'block';
+    if (landscapePauseIcon) landscapePauseIcon.style.display = playing ? 'block' : 'none';
     
     // 同步磁带齿轮动画
     if (playing) {
@@ -1600,8 +1613,8 @@ function playNext() {
                 // 单曲循环，重新播放当前歌曲
                 playSong(currentSongIndex);
                 break;
-            case 'shuffle':
-                // 随机播放，随机选择一首歌曲
+            case 'zaxin':
+                // 扎心循环，随机选择一首歌曲
                 let randomIndex;
                 do {
                     randomIndex = Math.floor(Math.random() * currentPlaylist.length);
@@ -1676,7 +1689,7 @@ function fallbackShare(text) {
 // 切换播放模式
 function togglePlayMode() {
     try {
-        const modes = ['repeat', 'repeat_one', 'shuffle'];
+        const modes = ['repeat', 'repeat_one', 'zaxin'];
         const currentIndex = modes.indexOf(playMode);
         const nextIndex = (currentIndex + 1) % modes.length;
         playMode = modes[nextIndex];
@@ -1691,8 +1704,8 @@ function togglePlayMode() {
             case 'repeat_one':
                 modeText = '单曲循环';
                 break;
-            case 'shuffle':
-                modeText = '随机播放';
+            case 'zaxin':
+                modeText = '扎心循环';
                 break;
         }
         
@@ -1703,24 +1716,67 @@ function togglePlayMode() {
     }
 }
 
+// 横屏模式切换循环模式
+function toggleLoopMode() {
+    togglePlayMode();
+}
+
+// 横屏模式切换播放暂停
+function togglePlayPause() {
+    togglePlay();
+}
+
 // 更新播放模式图标
 function updatePlayModeIcon() {
     try {
+        const iconBasePath = 'assets/images/icons/';
+        let iconFile = '';
+        let modeTitle = '';
+        
+        switch (playMode) {
+            case 'repeat':
+                iconFile = 'List_loop.png';
+                modeTitle = '播放模式: 列表循环';
+                break;
+            case 'repeat_one':
+                iconFile = 'Single_loop.png';
+                modeTitle = '播放模式: 单曲循环';
+                break;
+            case 'zaxin':
+                iconFile = 'Heartbreaking_loop.png';
+                modeTitle = '播放模式: 扎心循环';
+                break;
+        }
+        
+        const iconUrl = iconBasePath + iconFile;
+        
+        // 更新主播放器的循环模式图标
         if (playModeBtn) {
-            const icon = playModeBtn.querySelector('svg');
-            if (icon) {
-                switch (playMode) {
-                    case 'repeat':
-                        icon.innerHTML = '<path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/>';
-                        break;
-                    case 'repeat_one':
-                        icon.innerHTML = '<path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4zm-4-2V9h-1l-2 1v1h1.5v4H13z"/>';
-                        break;
-                    case 'shuffle':
-                        icon.innerHTML = '<path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm0 3.17l-2.41 2.41 2.41 2.41V7.17z"/>';
-                        break;
-                }
+            const iconImg = playModeBtn.querySelector('img');
+            if (iconImg) {
+                iconImg.src = iconUrl;
+                iconImg.alt = modeTitle.replace('播放模式: ', '');
             }
+            playModeBtn.title = modeTitle.replace('播放模式: ', '');
+        }
+        
+        // 更新主播放器的playModeIcon元素（带ID的img）
+        const playModeIconEl = document.getElementById('playModeIcon');
+        if (playModeIconEl) {
+            playModeIconEl.src = iconUrl;
+            playModeIconEl.alt = modeTitle.replace('播放模式: ', '');
+        }
+        
+        // 更新横屏模式的循环模式图标
+        const landscapeLoopIcon = document.getElementById('landscapeLoopIcon');
+        if (landscapeLoopIcon) {
+            landscapeLoopIcon.src = iconUrl;
+            landscapeLoopIcon.alt = modeTitle.replace('播放模式: ', '');
+        }
+        
+        const landscapeLoopBtn = document.getElementById('landscapeLoopBtn');
+        if (landscapeLoopBtn) {
+            landscapeLoopBtn.title = modeTitle.replace('播放模式: ', '');
         }
     } catch (error) {
         console.error('更新播放模式图标失败:', error);
@@ -2772,40 +2828,49 @@ function toggleLike() {
 // 更新喜欢按钮状态
 function updateLikeBtnStatus() {
     try {
-        const currentSong = playlist[currentSide][currentSongIndex];
-        const likeBtn = document.getElementById('likeBtn');
-        const miniLikeBtn = document.getElementById('mini-like-btn');
+        const currentSong = playlist[currentSide] ? playlist[currentSide][currentSongIndex] : null;
         
         if (!currentSong) return;
         
         // 检查歌曲是否已被喜欢
         const isLiked = likedSongs.some(song => song.id === currentSong.id);
         
-        // 更新主播放界面的喜欢按钮
-        if (likeBtn) {
-            const likeIcon = likeBtn.querySelector('svg path');
-            if (likeIcon) {
-                if (isLiked) {
-                    // 喜欢状态 - 红色心形
-                    likeIcon.setAttribute('fill', '#ff4757');
-                } else {
-                    // 未喜欢状态 - 米色心形
-                    likeIcon.setAttribute('fill', '#d9ceb2');
-                }
+        // 更新主播放界面的喜欢按钮 (likeIconBefore / likeIconAfter)
+        const likeIconBefore = document.getElementById('likeIconBefore');
+        const likeIconAfter = document.getElementById('likeIconAfter');
+        if (likeIconBefore && likeIconAfter) {
+            if (isLiked) {
+                likeIconBefore.style.display = 'none';
+                likeIconAfter.style.display = 'block';
+            } else {
+                likeIconBefore.style.display = 'block';
+                likeIconAfter.style.display = 'none';
             }
         }
         
-        // 更新底部悬浮播放器的喜欢按钮
-        if (miniLikeBtn) {
-            const miniLikeIcon = miniLikeBtn.querySelector('svg path');
-            if (miniLikeIcon) {
-                if (isLiked) {
-                    // 喜欢状态 - 红色心形
-                    miniLikeIcon.setAttribute('fill', '#ff4757');
-                } else {
-                    // 未喜欢状态 - 米色心形
-                    miniLikeIcon.setAttribute('fill', '#d9ceb2');
-                }
+        // 更新底部悬浮播放器的喜欢按钮 (mini-like-icon-before / mini-like-icon-after)
+        const miniLikeIconBefore = document.getElementById('mini-like-icon-before');
+        const miniLikeIconAfter = document.getElementById('mini-like-icon-after');
+        if (miniLikeIconBefore && miniLikeIconAfter) {
+            if (isLiked) {
+                miniLikeIconBefore.style.display = 'none';
+                miniLikeIconAfter.style.display = 'block';
+            } else {
+                miniLikeIconBefore.style.display = 'block';
+                miniLikeIconAfter.style.display = 'none';
+            }
+        }
+        
+        // 更新横屏模式的喜欢按钮 (landscapeLikeIconBefore / landscapeLikeIconAfter)
+        const landscapeLikeIconBefore = document.getElementById('landscapeLikeIconBefore');
+        const landscapeLikeIconAfter = document.getElementById('landscapeLikeIconAfter');
+        if (landscapeLikeIconBefore && landscapeLikeIconAfter) {
+            if (isLiked) {
+                landscapeLikeIconBefore.style.display = 'none';
+                landscapeLikeIconAfter.style.display = 'block';
+            } else {
+                landscapeLikeIconBefore.style.display = 'block';
+                landscapeLikeIconAfter.style.display = 'none';
             }
         }
     } catch (error) {
@@ -3411,8 +3476,8 @@ function preloadNextSong(currentPlaylist, currentIndex) {
         let nextIndex;
         
         switch (playMode) {
-            case 'shuffle':
-                // 随机播放模式，随机选择一首未缓存的歌曲
+            case 'zaxin':
+                // 扎心循环模式，随机选择一首未缓存的歌曲
                 const unCachedSongs = currentPlaylist.filter((song, index) => 
                     index !== currentIndex && !audioCacheManager.has(song.id)
                 );
@@ -3540,8 +3605,8 @@ function switchTape(direction) {
 function getCurrentTapeSongCount() {
     const pl = typeof playlist !== 'undefined' ? playlist : window.playlist;
 
-    if (currentTape === 0) {
-        // 默认磁带，返回当前面的歌曲数
+    if (currentTape === 0 || currentTape === 2) {
+        // 默认磁带（Pink Floyd）或第三张磁带（靛蓝回响），返回当前面的歌曲数
         return pl[currentSide]?.length || 0;
     } else {
         // 第二张磁带（本地歌曲）- 无数量限制
@@ -3561,8 +3626,8 @@ function getCurrentTapeSongCount() {
 function getCurrentTapePlaylist() {
     const pl = typeof playlist !== 'undefined' ? playlist : window.playlist;
 
-    if (currentTape === 0) {
-        // 默认磁带（Pink Floyd）
+    if (currentTape === 0 || currentTape === 2) {
+        // 默认磁带（Pink Floyd）或第三张磁带（靛蓝回响）
         return pl[currentSide] || [];
     } else {
         // 第二张磁带（本地歌曲）- 从 playlist.local 获取，无数量限制

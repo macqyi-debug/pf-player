@@ -5,7 +5,14 @@ const path = require('path');
 const PORT = 3000;
 
 const server = http.createServer((req, res) => {
-    let filePath = '.' + req.url;
+    // 对URL进行decodeURIComponent，处理中文和空格等特殊字符（如 "core icon-喜欢.png"）
+    let decodedUrl;
+    try {
+        decodedUrl = decodeURIComponent(req.url.split('?')[0]);
+    } catch (e) {
+        decodedUrl = req.url.split('?')[0];
+    }
+    let filePath = '.' + decodedUrl;
     if (filePath === './') filePath = './index.html';
     
     const extname = path.extname(filePath);

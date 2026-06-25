@@ -29,6 +29,7 @@ const SearchModule = {
                     <p class="hint">试试其他关键词</p>
                 </div>
             `;
+            container.classList.add('show');
             return;
         }
         
@@ -51,6 +52,7 @@ const SearchModule = {
                 `).join('')}
             </div>
         `;
+        container.classList.add('show');
     },
     
     // 播放搜索到的歌曲
@@ -71,6 +73,7 @@ const SearchModule = {
         const container = document.getElementById('search-results');
         if (container) {
             container.innerHTML = '';
+            container.classList.remove('show');
         }
     }
 };

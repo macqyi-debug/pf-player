@@ -733,7 +733,65 @@ const LocalMusicModule = {
     },
     
     // ==================== 歌单管理功能 ====================
-    
+
+    // 创建精简歌曲对象（去除大字段，只保留显示和识别需要的信息）
+    compactSong(song) {
+        if (!song) return song;
+        return {
+            id: song.id,
+            name: song.name,
+            artist: song.artist || '',
+            album: song.album || '',
+            cover: (typeof song.cover === 'string' && song.cover.startsWith('data:')) ? '' : (song.cover || ''),
+            duration: song.duration || 0,
+            type: song.type || 'local',
+            addedAt: song.addedAt || Date.now()
+        };
+    },
+
+    // 通过ID从缓存或IndexedDB获取完整歌曲（含 url）
+    async getFullSongById(songId) {
+        // 先查缓存
+        if (this.cachedLocalSongs && this.cachedLocalSongs.length > 0) {
+            const found = this.cachedLocalSongs.find(s => s.id === songId);
+            if (found) return found;
+        }
+        // 再查 IndexedDB
+        try {
+            const songs = await this.getAllSongsFromDB();
+            const found = songs.find(s => s.id === songId);
+            if (found) {
+                this.cachedLocalSongs = songs;
+                return found;
+            }
+        } catch (e) {
+            console.error('从 IndexedDB 获取歌曲失败:', e);
+        }
+        return null;
+    },
+
+    // 从精简歌曲列表还原完整歌曲列表
+    async hydrateSongs(compactSongs) {
+        if (!compactSongs || compactSongs.length === 0) return [];
+        const allLocalSongs = await this.getLocalSongs();
+        const result = [];
+        for (const compactSong of compactSongs) {
+            // 如果歌曲已经有 url，直接使用（可能是非本地歌曲）
+            if (compactSong && compactSong.url && !compactSong.url.startsWith('blob:')) {
+                result.push(compactSong);
+                continue;
+            }
+            // 从本地缓存中找到完整歌曲
+            if (compactSong && compactSong.id) {
+                const fullSong = allLocalSongs.find(s => s.id === compactSong.id);
+                if (fullSong) {
+                    result.push(fullSong);
+                }
+            }
+        }
+        return result;
+    },
+
     // 获取所有歌单（包含 Blob URL 过滤）
     getPlaylists() {
         try {
@@ -761,7 +819,7 @@ const LocalMusicModule = {
             
             // 如果有过滤，保存更新后的歌单
             if (needsSave) {
-                localStorage.setItem('localPlaylists', JSON.stringify(playlists));
+                this.savePlaylists(playlists);
             }
             
             return playlists;
@@ -770,13 +828,36 @@ const LocalMusicModule = {
             return [];
         }
     },
-    
+
     // 保存歌单
     savePlaylists(playlists) {
         try {
-            localStorage.setItem('localPlaylists', JSON.stringify(playlists));
+            // 存储前精简歌曲（去除大字段 url），防止 localStorage 溢出
+            const compactPlaylists = playlists.map(playlist => ({
+                ...playlist,
+                songs: (playlist.songs || []).map(song => this.compactSong(song))
+            }));
+            localStorage.setItem('localPlaylists', JSON.stringify(compactPlaylists));
         } catch (e) {
             console.error('保存歌单失败:', e);
+            if (e.name === 'QuotaExceededError') {
+                // 空间不足，清理旧数据后重试
+                try {
+                    const clearedPlaylists = playlists.map(playlist => ({
+                        ...playlist,
+                        songs: []
+                    }));
+                    localStorage.setItem('localPlaylists', JSON.stringify(clearedPlaylists));
+                    if (typeof UIManager !== 'undefined') {
+                        UIManager.showToast('存储空间不足，已清理歌单中的歌曲列表', 'warning');
+                    }
+                } catch (e2) {
+                    console.error('清理后仍无法保存歌单:', e2);
+                    if (typeof UIManager !== 'undefined') {
+                        UIManager.showToast('存储空间严重不足，歌单保存失败', 'error');
+                    }
+                }
+            }
         }
     },
     
@@ -1059,20 +1140,24 @@ const LocalMusicModule = {
     },
     
     // 从歌单播放歌曲
-    playSongFromPlaylist(playlistId, index) {
+    async playSongFromPlaylist(playlistId, index) {
         const playlists = this.getPlaylists();
         const playlist = playlists.find(p => p.id === playlistId);
         
         if (playlist && playlist.songs[index]) {
-            // 设置播放列表
-            this.setCurrentPlaylist(playlist.songs, index);
+            // 从 IndexedDB 还原完整歌曲（含 url）用于播放
+            const fullSongs = await this.hydrateSongs(playlist.songs);
+            const songToPlay = fullSongs[index] || playlist.songs[index];
+            
+            // 设置播放列表（用完整歌曲列表，确保能播放）
+            this.setCurrentPlaylist(fullSongs, index);
             
             // 播放歌曲
             if (typeof playSong === 'function') {
                 playSong(index);
             }
             
-            UIManager.showToast(`正在播放：${playlist.songs[index].name}`, 'info');
+            UIManager.showToast(`正在播放：${songToPlay.name}`, 'info');
         }
     },
     
@@ -1200,18 +1285,22 @@ const LocalMusicModule = {
     },
     
     // 播放歌单
-    playPlaylist(playlistId) {
+    async playPlaylist(playlistId) {
         const playlists = this.getPlaylists();
         const playlist = playlists.find(p => p.id === playlistId);
         
         if (playlist && playlist.songs.length > 0) {
+            // 从 IndexedDB 还原完整歌曲（含 url）用于播放
+            const fullSongs = await this.hydrateSongs(playlist.songs);
+            
             // 设置当前播放列表
             if (typeof window.playlist !== 'undefined') {
-                window.playlist.current = playlist.songs;
+                window.playlist.current = fullSongs.length > 0 ? fullSongs : playlist.songs;
             }
             
             // 播放第一首歌
-            PlayerStore.play(playlist.songs[0]);
+            const firstSong = fullSongs[0] || playlist.songs[0];
+            PlayerStore.play(firstSong);
             UIManager.showMiniPlayer();
             UIManager.showToast(`正在播放：${playlist.name}`, 'info');
         }
@@ -1237,15 +1326,15 @@ const LocalMusicModule = {
         // 移除已存在的相同歌曲（避免重复）
         history = history.filter(s => s.id !== song.id);
         
-        // 添加到开头
+        // 添加到开头（使用精简歌曲对象，防止 localStorage 溢出）
         history.unshift({
-            ...song,
+            ...this.compactSong(song),
             playTime: Date.now()
         });
         
-        // 最多保留100首历史记录
-        if (history.length > 100) {
-            history = history.slice(0, 100);
+        // 最多保留50首历史记录（进一步减少存储量）
+        if (history.length > 50) {
+            history = history.slice(0, 50);
         }
         
         localStorage.setItem('pf_play_history', JSON.stringify(history));
@@ -1332,7 +1421,7 @@ const LocalMusicModule = {
     setCurrentPlaylist(songs, currentIndex = 0) {
         const playlist = {
             name: '播放列表',
-            songs: songs,
+            songs: songs.map(song => this.compactSong(song)),
             currentIndex: currentIndex
         };
         localStorage.setItem('pf_current_playlist', JSON.stringify(playlist));
@@ -1345,14 +1434,14 @@ const LocalMusicModule = {
         // 检查是否已存在
         const exists = playlist.songs.some(s => s.id === song.id);
         if (!exists) {
-            playlist.songs.push(song);
+            playlist.songs.push(this.compactSong(song));
             this.saveCurrentPlaylist(playlist);
             UIManager.showToast('已添加到播放列表', 'success');
         } else {
             UIManager.showToast('该歌曲已在播放列表中', 'info');
         }
     },
-    
+
     // 从当前播放列表移除
     removeFromCurrentPlaylist(songId) {
         const playlist = this.getCurrentPlaylist();
@@ -1366,7 +1455,7 @@ const LocalMusicModule = {
         this.saveCurrentPlaylist(playlist);
         UIManager.showToast('已从播放列表移除', 'info');
     },
-    
+
     // 清空当前播放列表
     clearCurrentPlaylist() {
         const playlist = {
@@ -1377,10 +1466,14 @@ const LocalMusicModule = {
         this.saveCurrentPlaylist(playlist);
         UIManager.showToast('播放列表已清空', 'info');
     },
-    
+
     // 保存当前播放列表
     saveCurrentPlaylist(playlist) {
-        localStorage.setItem('pf_current_playlist', JSON.stringify(playlist));
+        const compactPlaylist = {
+            ...playlist,
+            songs: (playlist.songs || []).map(song => this.compactSong(song))
+        };
+        localStorage.setItem('pf_current_playlist', JSON.stringify(compactPlaylist));
     },
     
     // 播放当前播放列表

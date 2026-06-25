@@ -23,16 +23,39 @@ const PlayerStore = {
     async init() {
         // 防止重复初始化
         if (this.initialized) return;
-        
+
+        let localSongs = [];
+        // 先加载本地歌曲缓存（用于后续还原 favorites/recentPlays 中的本地歌曲）
+        if (window.LocalMusicModule) {
+            try {
+                localSongs = await LocalMusicModule.getLocalSongs();
+            } catch (e) {
+                console.warn('加载本地歌曲失败:', e);
+            }
+        }
+
         // 从本地存储加载数据
         const savedState = localStorage.getItem('pfPlayerState');
         if (savedState) {
             try {
                 const parsed = JSON.parse(savedState);
-                this.state.favorites = parsed.favorites || [];
-                this.state.recentPlays = parsed.recentPlays || [];
-                
-                // 过滤掉已失效的 Blob URL 歌曲
+
+                // 还原本地歌曲（无 url 的本地歌曲从 IndexedDB 还原）
+                const hydrateFromLocal = (songs) => {
+                    if (!songs || songs.length === 0) return [];
+                    return songs.map(song => {
+                        if (song && song.type === 'local' && (!song.url || song.url === null)) {
+                            const fullSong = localSongs.find(s => s.id === song.id);
+                            return fullSong || song;
+                        }
+                        return song;
+                    }).filter(s => s && s.name);
+                };
+
+                this.state.favorites = hydrateFromLocal(parsed.favorites || []);
+                this.state.recentPlays = hydrateFromLocal(parsed.recentPlays || []);
+
+                // 播放列表：过滤 Blob URL，并还原本地歌曲
                 const savedPlaylist = parsed.playlist || [];
                 this.state.playlist = savedPlaylist.filter(song => {
                     if (song.url && song.url.startsWith('blob:')) {
@@ -40,18 +63,24 @@ const PlayerStore = {
                         return false;
                     }
                     return true;
+                }).map(song => {
+                    if (song && song.type === 'local' && (!song.url || song.url === null)) {
+                        const fullSong = localSongs.find(s => s.id === song.id);
+                        return fullSong || song;
+                    }
+                    return song;
                 });
-                
+
                 this.state.volume = parsed.volume ?? 1;
             } catch (e) {
                 console.error('加载播放器状态失败:', e);
             }
         }
-        
+
         // 首先加载磁带盒默认歌曲（A面和B面）
         if (window.playlist) {
             const existingIds = new Set(this.state.playlist.map(s => s.id));
-            
+
             // 添加A面歌曲
             (window.playlist.A || []).forEach(song => {
                 if (!existingIds.has(song.id)) {
@@ -59,7 +88,7 @@ const PlayerStore = {
                     existingIds.add(song.id);
                 }
             });
-            
+
             // 添加B面歌曲
             (window.playlist.B || []).forEach(song => {
                 if (!existingIds.has(song.id)) {
@@ -67,47 +96,46 @@ const PlayerStore = {
                     existingIds.add(song.id);
                 }
             });
-            
+
             console.log('PlayerStore 加载了磁带盒默认歌曲:', this.state.playlist.length, '首');
         }
-        
-        // 加载本地歌曲到播放列表（异步）
-        if (window.LocalMusicModule) {
-            try {
-                const localSongs = await LocalMusicModule.getLocalSongs();
-                if (localSongs.length > 0) {
-                    const existingIds = new Set(this.state.playlist.map(s => s.id));
-                    localSongs.forEach(song => {
-                        if (!existingIds.has(song.id)) {
-                            this.state.playlist.push(song);
-                        }
-                    });
-                    console.log('PlayerStore 加载了', localSongs.length, '首本地歌曲');
+
+        // 添加本地歌曲到播放列表（去重后添加）
+        if (localSongs.length > 0) {
+            const existingIds = new Set(this.state.playlist.map(s => s.id));
+            localSongs.forEach(song => {
+                if (!existingIds.has(song.id)) {
+                    this.state.playlist.push(song);
                 }
-            } catch (e) {
-                console.error('加载本地歌曲失败:', e);
-            }
+            });
+            console.log('PlayerStore 总播放列表歌曲:', this.state.playlist.length, '首');
         }
-        
+
         this.initialized = true;
     },
     
+    // 精简歌曲对象（去除大字段 url 和 cover data URL）
+    compactSong(song) {
+        if (!song) return song;
+        return {
+            id: song.id,
+            name: song.name,
+            artist: song.artist || '',
+            album: song.album || '',
+            cover: (typeof song.cover === 'string' && song.cover.startsWith('data:')) ? '' : (song.cover || ''),
+            duration: song.duration || 0,
+            type: song.type || '',
+            addedAt: song.addedAt || Date.now()
+        };
+    },
+
     save() {
         try {
-            // 保存到本地存储时，过滤掉本地歌曲的 data URL（避免存储空间超限）
-            const safePlaylist = this.state.playlist.map(song => {
-                if (song.type === 'local' && song.url && song.url.startsWith('data:')) {
-                    // 本地歌曲只保存元数据，不保存 data URL
-                    const { url, ...meta } = song;
-                    return { ...meta, url: null }; // 将 URL 设为 null，播放时重新生成
-                }
-                return song;
-            });
-            
+            // 保存到本地存储时，所有歌曲都精简（去除 url 和 cover data URL）
             const toSave = {
-                favorites: this.state.favorites,
-                recentPlays: this.state.recentPlays,
-                playlist: safePlaylist,
+                favorites: (this.state.favorites || []).map(song => this.compactSong(song)),
+                recentPlays: (this.state.recentPlays || []).map(song => this.compactSong(song)),
+                playlist: (this.state.playlist || []).map(song => this.compactSong(song)),
                 volume: this.state.volume
             };
             localStorage.setItem('pfPlayerState', JSON.stringify(toSave));
@@ -119,14 +147,14 @@ const PlayerStore = {
             }
         }
     },
-    
+
     cleanupStorage() {
         try {
-            // 清理最近播放记录来释放空间
+            // 清理最近播放记录和播放列表来释放空间（只保留收藏和音量）
             const toSave = {
-                favorites: this.state.favorites,
-                recentPlays: [], // 清空最近播放
-                playlist: this.state.playlist.slice(0, 10), // 只保留前10首
+                favorites: (this.state.favorites || []).slice(0, 50).map(song => this.compactSong(song)),
+                recentPlays: [],
+                playlist: [],
                 volume: this.state.volume
             };
             localStorage.setItem('pfPlayerState', JSON.stringify(toSave));

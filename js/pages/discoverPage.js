@@ -203,8 +203,7 @@ const DiscoverPage = {
         
         // 如果搜索词为空，清空搜索结果
         if (!query.trim()) {
-            const resultsContainer = document.getElementById('search-results');
-            if (resultsContainer) resultsContainer.innerHTML = '';
+            SearchModule.clearResults();
             const pageContent = document.querySelector('.discover-page .page-content');
             if (pageContent) pageContent.style.display = 'block';
             return;

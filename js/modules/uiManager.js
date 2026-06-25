@@ -764,7 +764,7 @@ const UIManager = {
                     ${state.playlist.slice(0, maxVisibleItems).map((song, index) => {
                         const isPlaying = song.id === currentSongId;
                         const playingClass = isPlaying ? 'playing' : '';
-                        const playingIcon = isPlaying ? '<span class="playing-icon">▶</span>' : `<span class="playlist-item-number">${index + 1}</span>`;
+                        const playingIcon = isPlaying ? '<span class="playing-icon"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg></span>' : `<span class="playlist-item-number">${index + 1}</span>`;
                         const songTitle = song.title || song.name || '未知歌曲';
                         const songArtist = song.artist || '未知艺术家';
                         return `
@@ -783,7 +783,7 @@ const UIManager = {
                 currentContainer.innerHTML = state.playlist.map((song, index) => {
                     const isPlaying = song.id === currentSongId;
                     const playingClass = isPlaying ? 'playing' : '';
-                    const playingIcon = isPlaying ? '<span class="playing-icon">▶</span>' : `<span class="playlist-item-number">${index + 1}</span>`;
+                    const playingIcon = isPlaying ? '<span class="playing-icon"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg></span>' : `<span class="playlist-item-number">${index + 1}</span>`;
                     const songTitle = song.title || song.name || '未知歌曲';
                     const songArtist = song.artist || '未知艺术家';
                     return `

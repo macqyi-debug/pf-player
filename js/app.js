@@ -117,20 +117,26 @@ function toggleScreenOrientation() {
 }
 
 /**
- * 打开横屏播放器
+ * 打开横屏播放器 - 优化性能：使用requestAnimationFrame批量DOM操作
  */
 function openLandscapePlayer() {
     const landscapeContainer = document.getElementById('landscapePlayerContainer');
     const playerModal = document.getElementById('player-modal');
-    
+
     if (!landscapeContainer || !playerModal) return;
-    
+
     isLandscapeMode = true;
-    landscapeContainer.classList.add('active');
-    playerModal.classList.remove('active');
-    
-    // 更新横屏UI
-    updateLandscapeUI();
+
+    // 使用requestAnimationFrame批量DOM操作，减少重排
+    requestAnimationFrame(function() {
+        landscapeContainer.classList.add('active');
+        playerModal.classList.remove('active');
+
+        // 下一帧更新UI，避免阻塞动画
+        requestAnimationFrame(function() {
+            updateLandscapeUI();
+        });
+    });
 }
 
 /**
@@ -139,67 +145,61 @@ function openLandscapePlayer() {
 function closeLandscapePlayer() {
     const landscapeContainer = document.getElementById('landscapePlayerContainer');
     const playerModal = document.getElementById('player-modal');
-    
+
     if (!landscapeContainer || !playerModal) return;
-    
+
     isLandscapeMode = false;
-    landscapeContainer.classList.remove('active');
-    playerModal.classList.add('active');
-    
-    // 停止旋转动画
-    const vinylDisc = document.getElementById('vinylDisc');
-    if (vinylDisc) {
-        vinylDisc.classList.remove('spinning');
-    }
+
+    requestAnimationFrame(function() {
+        landscapeContainer.classList.remove('active');
+        playerModal.classList.add('active');
+
+        const vinylDisc = document.getElementById('vinylDisc');
+        if (vinylDisc) {
+            vinylDisc.classList.remove('spinning');
+        }
+    });
 }
 
 /**
- * 更新横屏UI
+ * 更新横屏UI - 优化版本
  */
 function updateLandscapeUI() {
     const state = PlayerStore.getState();
     const currentSong = state.currentSong;
-    
-    console.log('updateLandscapeUI called, currentSong:', currentSong);
-    
-    // 更新专辑封面
-    const vinylCoverImg = document.getElementById('vinylCoverImg');
-    if (vinylCoverImg) {
-        if (currentSong && currentSong.cover) {
-            vinylCoverImg.src = currentSong.cover;
-            vinylCoverImg.alt = currentSong.name || currentSong.title || '专辑封面';
-            console.log('Setting cover:', currentSong.cover);
-        } else if (currentSong && currentSong.albumArt) {
-            vinylCoverImg.src = currentSong.albumArt;
-            vinylCoverImg.alt = currentSong.name || currentSong.title || '专辑封面';
-            console.log('Setting cover from albumArt:', currentSong.albumArt);
-        } else {
-            // 如果没有封面，使用默认图片
-            vinylCoverImg.src = 'assets/images/PF-Logo.png';
-            vinylCoverImg.alt = '专辑封面';
-            console.log('No cover available, using default');
+
+    // 批量DOM更新，减少重排
+    requestAnimationFrame(function() {
+        // 更新专辑封面
+        const vinylCoverImg = document.getElementById('vinylCoverImg');
+        if (vinylCoverImg) {
+            if (currentSong && currentSong.cover) {
+                vinylCoverImg.src = currentSong.cover;
+                vinylCoverImg.alt = currentSong.name || currentSong.title || '专辑封面';
+            } else if (currentSong && currentSong.albumArt) {
+                vinylCoverImg.src = currentSong.albumArt;
+                vinylCoverImg.alt = currentSong.name || currentSong.title || '专辑封面';
+            } else {
+                vinylCoverImg.src = 'assets/images/PF-Logo.png';
+                vinylCoverImg.alt = '专辑封面';
+            }
+            vinylCoverImg.onerror = function() {
+                this.src = 'assets/images/PF-Logo.png';
+            };
         }
-        
-        // 添加图片加载错误处理
-        vinylCoverImg.onerror = function() {
-            console.log('Cover image load failed, using default');
-            this.src = 'assets/images/PF-Logo.png';
-        };
-    } else {
-        console.log('vinylCoverImg element not found');
-    }
-    
-    // 更新歌词
-    updateLandscapeLyrics();
-    
-    // 更新播放状态
-    updateLandscapePlayState();
-    
-    // 更新喜欢状态
-    updateLandscapeFavoriteState();
-    
-    // 更新循环模式状态
-    updateLandscapeLoopState();
+
+        // 更新歌词
+        updateLandscapeLyrics();
+
+        // 更新播放状态
+        updateLandscapePlayState();
+
+        // 更新喜欢状态
+        updateLandscapeFavoriteState();
+
+        // 更新循环模式状态
+        updateLandscapeLoopState();
+    });
 }
 
 /**
@@ -243,21 +243,29 @@ function updateLandscapeLyrics() {
 }
 
 /**
- * 滚动横屏歌词到当前行
+ * 滚动横屏歌词到当前行 - 优化版本
  */
 function scrollLandscapeLyrics(currentLine) {
+    if (currentLine < 0) return;
+
     const lyricsContainer = document.querySelector('.landscape-lyrics-container');
-    const activeLine = document.querySelector(`.landscape-lyric-line[data-index="${currentLine}"]`);
-    
-    if (lyricsContainer && activeLine) {
+    if (!lyricsContainer) return;
+
+    const activeLine = lyricsContainer.querySelector(
+        `.landscape-lyric-line[data-index="${currentLine}"]`
+    );
+
+    if (activeLine) {
+        // 避免频繁重排，只在必要时滚动
         const containerHeight = lyricsContainer.clientHeight;
         const lineTop = activeLine.offsetTop;
-        const lineHeight = activeLine.clientHeight;
-        
-        lyricsContainer.scrollTo({
-            top: lineTop - containerHeight / 2 + lineHeight / 2,
-            behavior: 'smooth'
-        });
+        const lineHeight = activeLine.offsetHeight;
+        const targetScrollTop = lineTop - containerHeight / 2 + lineHeight / 2;
+
+        // 只有当滚动位置差异超过阈值时才执行滚动
+        if (Math.abs(lyricsContainer.scrollTop - targetScrollTop) > 10) {
+            lyricsContainer.scrollTop = targetScrollTop;
+        }
     }
 }
 
@@ -301,11 +309,14 @@ function updateLandscapePlayState() {
  */
 function updateLandscapePlayIcons(isPlaying) {
     const playIcon = document.getElementById('landscapePlayIcon');
-    if (playIcon) {
+    const pauseIcon = document.getElementById('landscapePauseIcon');
+    if (playIcon && pauseIcon) {
         if (isPlaying) {
-            playIcon.innerHTML = '<rect x="5" y="4" width="4" height="16"></rect><rect x="15" y="4" width="4" height="16"></rect>';
+            playIcon.style.display = 'none';
+            pauseIcon.style.display = 'inline-block';
         } else {
-            playIcon.innerHTML = '<polygon points="8 4 20 12 8 20 8 4"></polygon>';
+            playIcon.style.display = 'inline-block';
+            pauseIcon.style.display = 'none';
         }
     }
 }
@@ -344,28 +355,38 @@ function updateLandscapeLoopState() {
     const loopBtn = document.getElementById('landscapeLoopBtn');
     if (!loopBtn) return;
     
-    const svg = loopBtn.querySelector('svg');
+    // 获取 <img> 元素（代替原来的 SVG）
+    const loopImg = document.getElementById('landscapeLoopIcon');
+    const iconBasePath = 'assets/images/icons/';
     
     if (loopMode === 'one') {
         loopBtn.classList.add('active');
-        svg.setAttribute('stroke', '#e74c3c');
-        // 显示单曲循环图标
-        svg.innerHTML = '<circle cx="12" cy="12" r="10"></circle><text x="12" y="16" font-size="12" text-anchor="middle" fill="currentColor">1</text>';
+        if (loopImg) {
+            loopImg.src = iconBasePath + 'Single_loop.png';
+            loopImg.alt = '单曲循环';
+        }
+        loopBtn.title = '单曲循环';
     } else if (loopMode === 'all') {
         loopBtn.classList.add('active');
-        svg.setAttribute('stroke', '#e74c3c');
-        // 显示列表循环图标
-        svg.innerHTML = '<polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path>';
+        if (loopImg) {
+            loopImg.src = iconBasePath + 'List_loop.png';
+            loopImg.alt = '列表循环';
+        }
+        loopBtn.title = '列表循环';
     } else if (loopMode === 'shuffle') {
         loopBtn.classList.add('active');
-        svg.setAttribute('stroke', '#e74c3c');
-        // 显示随机循环图标
-        svg.innerHTML = '<polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line><line x1="4" y1="4" x2="9" y2="9"></line>';
+        if (loopImg) {
+            loopImg.src = iconBasePath + 'Heartbreaking_loop.png';
+            loopImg.alt = '扎心循环';
+        }
+        loopBtn.title = '扎心循环';
     } else {
         loopBtn.classList.remove('active');
-        svg.setAttribute('stroke', 'currentColor');
-        // 显示默认循环图标
-        svg.innerHTML = '<polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path>';
+        if (loopImg) {
+            loopImg.src = iconBasePath + 'List_loop.png';
+            loopImg.alt = '循环模式';
+        }
+        loopBtn.title = '循环模式';
     }
 }
 
