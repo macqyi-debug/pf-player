@@ -1,6 +1,6 @@
 /**
  * PF-Player 应用主入口
- * 版本：v4.2.0 (优化迭代)
+ * 版本：v4.2.2 (优化迭代)
  */
 
 // 全局变量
@@ -23,7 +23,7 @@ const App = {
     
     // 初始化应用
     async init() {
-        console.log('🎸 PF-Player v4.2.0 正在初始化...');
+        console.log('🎸 PF-Player v4.2.2 正在初始化...');
         
         // 先初始化PlayerStore
         await PlayerStore.init();

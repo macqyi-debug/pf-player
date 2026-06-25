@@ -1,6 +1,6 @@
 {
   "name": "pf-player",
-  "version": "4.2.0",
+  "version": "4.2.2",
   "description": "复古磁带风格的音乐播放器",
   "main": "index.html",
   "scripts": {
