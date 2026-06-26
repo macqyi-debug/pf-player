@@ -21,7 +21,7 @@ const DiscoverPage = {
                 <div class="page-content">
                     <!-- 每日推荐 -->
                     <section class="section daily-recommendation">
-                        <h2>▶OOTJ今日推荐</h2>
+                        <h2><svg class="play-icon-svg" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>OOTJ今日推荐</h2>
                         <div class="recommendation-card" id="daily-recommendation-card">
                             <div class="card-background"></div>
                             <div class="card-content">
@@ -68,7 +68,7 @@ const DiscoverPage = {
                     
                     <!-- SOLO 大赏 -->
                     <section class="section solo-section">
-                        <h2>▶SOLO大赏</h2>
+                        <h2><svg class="play-icon-svg" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>SOLO大赏</h2>
                         <div class="solo-grid">
                             <div class="solo-card">
                                 <div class="solo-icon">🎹</div>
@@ -108,7 +108,7 @@ const DiscoverPage = {
                     
                     <!-- 摇滚名人堂 -->
                     <section class="section hall-of-fame">
-                        <h2>▶摇滚名人堂</h2>
+                        <h2><svg class="play-icon-svg" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>摇滚名人堂</h2>
                         <div class="timeline">
                             <div class="timeline-item" data-year="1965">
                                 <span class="year">1965</span>

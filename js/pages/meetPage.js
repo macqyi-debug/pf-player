@@ -14,7 +14,7 @@ const MeetPage = {
                 <div class="page-content">
                     <!-- 弹幕评论播放页 -->
                     <section class="section danmaku-player">
-                        <h2>▶发射弹幕</h2>
+                        <h2><svg class="play-icon-svg" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>发射弹幕</h2>
                         <div class="player-with-danmaku">
                             <div class="song-info">
                                 <h3>Comfortably Numb</h3>
@@ -37,7 +37,7 @@ const MeetPage = {
                     
                     <!-- 推荐乐迷 -->
                     <section class="section recommended-users">
-                        <h2>▶这不巧了</h2>
+                        <h2><svg class="play-icon-svg" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>这不巧了</h2>
                         <div class="user-list">
                             <div class="user-card">
                                 <div class="user-avatar">
@@ -113,7 +113,7 @@ const MeetPage = {
                     
                     <!-- 歌曲关联 -->
                     <section class="section song-connections">
-                        <h2>▶ONE MORE SONG</h2>
+                        <h2><svg class="play-icon-svg" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>ONE MORE SONG</h2>
                         <div class="connection-card">
                             <div class="song-metadata">
                                 <h3>Hey You</h3>

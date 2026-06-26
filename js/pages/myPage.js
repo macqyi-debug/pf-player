@@ -69,7 +69,7 @@ const MyPage = {
                     
                     <!-- 音乐管理 -->
                     <section class="section music-management">
-                        <h2>▶曲库</h2>
+                        <h2><svg class="play-icon-svg" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>曲库</h2>
                         
                         <div class="menu-list">
                             <div class="menu-item" data-page="liked-songs" onclick="toggleMusicLibrary(this, 'liked')">
@@ -141,7 +141,7 @@ const MyPage = {
                     
                     <!-- 设置 -->
                     <section class="section settings-section">
-                        <h2>▶设置</h2>
+                        <h2><svg class="play-icon-svg" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>设置</h2>
                         
                         <div class="settings-group">
                             <div class="setting-item">
